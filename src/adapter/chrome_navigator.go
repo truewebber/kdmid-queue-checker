@@ -3,9 +3,10 @@ package adapter
 import (
 	"bytes"
 	"fmt"
-	"github.com/playwright-community/playwright-go"
 	"log"
 	"net/url"
+
+	"github.com/playwright-community/playwright-go"
 
 	"kdmid-queue-checker/domain/image"
 	"kdmid-queue-checker/domain/page"
@@ -131,8 +132,102 @@ func (c *chromeNavigator) takeCaptchaScreenshot(browserPage playwright.Page) (im
 }
 
 func (c *chromeNavigator) SubmitAuthorization(code string) (page.Stat, error) {
-	//TODO implement me
-	panic("implement me")
+	pagesCount := len(c.ctx.Pages())
+	if pagesCount != 1 {
+		return page.Stat{}, fmt.Errorf("expected 1 page, got %d", pagesCount)
+	}
+
+	browserPage := c.ctx.Pages()[0]
+
+	captchaLocator, err := c.getInputForCaptcha(browserPage)
+	if err != nil {
+		return page.Stat{}, fmt.Errorf("could not get captcha input: %w", err)
+	}
+
+	if err = captchaLocator.Fill(code); err != nil {
+		return page.Stat{}, fmt.Errorf("could not fill input field: %w", err)
+	}
+
+	submitLocator, err := c.getSubmitButton(browserPage)
+	if err != nil {
+		return page.Stat{}, fmt.Errorf("could not get submit button: %w", err)
+	}
+
+	networkBuffer := bytesBuffer{}
+
+	browserPage.On("request", networkBuffer.onRequest)
+	defer browserPage.RemoveListener("request", networkBuffer.onRequest)
+
+	browserPage.On("response", networkBuffer.onResponse)
+	defer browserPage.RemoveListener("response", networkBuffer.onResponse)
+
+	if err = submitLocator.Click(); err != nil {
+		return page.Stat{
+			Network: networkBuffer.Bytes(),
+		}, fmt.Errorf("could not click submit button: %w", err)
+	}
+
+	err = browserPage.WaitForURL("https://barcelona.kdmid.ru/queue/OrderInfo.aspx*", playwright.PageWaitForURLOptions{
+		WaitUntil: playwright.WaitUntilStateLoad,
+	})
+	if err != nil {
+		return page.Stat{
+			Network: networkBuffer.Bytes(),
+		}, fmt.Errorf("navigation failed: %w", err)
+	}
+
+	pageHtml, err := browserPage.Content()
+	if err != nil {
+		return page.Stat{
+			Network: networkBuffer.Bytes(),
+		}, fmt.Errorf("page content: %w", err)
+	}
+
+	screenshot, err := browserPage.Screenshot(playwright.PageScreenshotOptions{
+		FullPage: playwright.Bool(true),
+	})
+	if err != nil {
+		return page.Stat{
+			Network: networkBuffer.Bytes(),
+			HTML:    []byte(pageHtml),
+		}, fmt.Errorf("could not take image: %w", err)
+	}
+
+	return page.Stat{
+		Network:    networkBuffer.Bytes(),
+		HTML:       []byte(pageHtml),
+		Screenshot: screenshot,
+	}, nil
+}
+
+func (c *chromeNavigator) getInputForCaptcha(page playwright.Page) (playwright.Locator, error) {
+	inputLocator := page.Locator("div.inp > input")
+
+	n, err := inputLocator.Count()
+	if err != nil {
+		return nil, fmt.Errorf("get count selected inputs: %w", err)
+	}
+
+	if n != 3 {
+		return nil, fmt.Errorf("expected 3 input, got %d", n)
+	}
+
+	return inputLocator.Nth(2), nil
+}
+
+func (c *chromeNavigator) getSubmitButton(page playwright.Page) (playwright.Locator, error) {
+	inputLocator := page.Locator("input[type=submit]")
+
+	n, err := inputLocator.Count()
+	if err != nil {
+		return nil, fmt.Errorf("get count selected inputs: %w", err)
+	}
+
+	if n != 1 {
+		return nil, fmt.Errorf("expected 1 input, got %d", n)
+	}
+
+	return inputLocator, nil
 }
 
 func (c *chromeNavigator) OpenSlotBookingPage() (page.Stat, error) {

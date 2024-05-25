@@ -14,6 +14,7 @@ type config struct {
 	TwoCaptcha struct {
 		APIKey string `env:"TWO_CAPTCHA_API_KEY,required=true"`
 	}
+	ArtifactsDirectory string `env:"ARTIFACTS_DIRECTORY,required=true"`
 }
 
 func mustLoadConfig() *config {
