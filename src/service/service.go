@@ -1,0 +1,25 @@
+package service
+
+import (
+	"kdmid-queue-checker/adapter"
+	"kdmid-queue-checker/app"
+	"kdmid-queue-checker/app/daemon"
+	"kdmid-queue-checker/domain/log"
+)
+
+func NewApplication(cfg *Config, logger log.Logger) *app.Application {
+	dispatcher := adapter.MustNewChromeDispatcher()
+	solver := adapter.NewTwoCaptchaSolver(cfg.TwoCaptchaAPIKey)
+	storage := adapter.MustNewFileSystemCrawlStorage(cfg.ArtifactsDirectory, logger)
+
+	return &app.Application{
+		Daemon: app.Daemon{
+			CheckSlot: daemon.NewCheckSlot(dispatcher, solver, storage, logger),
+		},
+	}
+}
+
+type Config struct {
+	TwoCaptchaAPIKey   string
+	ArtifactsDirectory string
+}

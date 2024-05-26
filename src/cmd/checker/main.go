@@ -5,28 +5,18 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"time"
+	"syscall"
 
-	"kdmid-queue-checker/adapter"
-	"kdmid-queue-checker/domain/captcha"
-	"kdmid-queue-checker/domain/crawl"
 	"kdmid-queue-checker/domain/log"
-	"kdmid-queue-checker/domain/page"
+	"kdmid-queue-checker/service"
 )
 
 func main() {
 	cfg := mustLoadConfig()
 	logger := log.NewZapWrapper()
+	ctx := contextClosableOnSignals(syscall.SIGINT, syscall.SIGTERM)
 
-	dispatcher := adapter.MustNewChromeDispatcher()
-	solver := adapter.NewTwoCaptchaSolver(cfg.TwoCaptcha.APIKey)
-	storage := adapter.MustNewFileSystemCrawlStorage(cfg.ArtifactsDirectory, logger)
-
-	if err := run(cfg.Application.ID, cfg.Application.Secret, dispatcher, solver, storage, logger); err != nil {
-		panic(err)
-	}
-
-	if err := dispatcher.Close(); err != nil {
+	if err := run(ctx, cfg, logger); err != nil {
 		panic(err)
 	}
 
@@ -35,50 +25,16 @@ func main() {
 	}
 }
 
-func run(
-	id, cd string,
-	dispatcher page.Dispatcher,
-	solver captcha.Solver,
-	storage crawl.Storage,
-	logger log.Logger,
-) error {
-	navigator, err := dispatcher.NewNavigator(id, cd)
-	if err != nil {
-		return fmt.Errorf("new navigator: %w", err)
+func run(ctx context.Context, cfg *config, logger log.Logger) error {
+	appConfig := &service.Config{
+		TwoCaptchaAPIKey:   cfg.TwoCaptcha.APIKey,
+		ArtifactsDirectory: cfg.ArtifactsDirectory,
 	}
 
-	defer logger.CloseWithLog(navigator)
+	app := service.NewApplication(appConfig, logger)
 
-	crawlResult := crawl.Result{
-		RanAt: time.Now(),
-	}
-
-	crawlResult.One, err = navigator.OpenPageToAuthorize()
-	if err != nil {
-		return fmt.Errorf("open page to authorize: %w", err)
-	}
-
-	code, err := solver.Solve(crawlResult.One.Captcha.Image)
-	if err != nil {
-		return fmt.Errorf("solve captcha: %w", err)
-	}
-
-	crawlResult.Two, err = navigator.SubmitAuthorization(code)
-	if err != nil {
-		return fmt.Errorf("submit authorization: %w", err)
-	}
-
-	crawlResult.Three, err = navigator.OpenSlotBookingPage()
-	if err != nil {
-		return fmt.Errorf("open slot booking page: %w", err)
-	}
-
-	crawlResult.SomethingInteresting = crawlResult.One.SomethingInteresting ||
-		crawlResult.Two.SomethingInteresting ||
-		crawlResult.Three.SomethingInteresting
-
-	if err := storage.Save(crawlResult); err != nil {
-		return fmt.Errorf("save crawl result: %w", err)
+	if err := app.Daemon.CheckSlot.Handle(ctx, cfg.Application.ID, cfg.Application.Secret); err != nil {
+		return fmt.Errorf("handle daemon check slot: %w", err)
 	}
 
 	return nil
