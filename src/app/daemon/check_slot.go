@@ -52,7 +52,6 @@ func (c *CheckSlot) Handle(ctx context.Context, applicationID, applicationCD str
 
 func (c *CheckSlot) runSingleCheck(applicationID, applicationCD string) error {
 	c.logger.Info("start run single check")
-	defer c.logger.Info("run single check finished")
 
 	navigator, err := c.dispatcher.NewNavigator(applicationID, applicationCD)
 	if err != nil {
@@ -92,6 +91,8 @@ func (c *CheckSlot) runSingleCheck(applicationID, applicationCD string) error {
 	if err := c.storage.Save(crawlResult); err != nil {
 		return fmt.Errorf("save crawl result: %w", err)
 	}
+
+	c.logger.Info("run single check finished", "something_interesting", crawlResult.SomethingInteresting)
 
 	return nil
 }
