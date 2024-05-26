@@ -7,10 +7,11 @@ import (
 )
 
 type Stat struct {
-	HTML       []byte
-	Network    []byte
-	Screenshot image.PNG
-	Captcha    Captcha
+	HTML                 []byte
+	Network              []byte
+	Screenshot           image.PNG
+	Captcha              Captcha
+	SomethingInteresting bool
 }
 
 type Captcha struct {

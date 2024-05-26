@@ -3,6 +3,7 @@ package log
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"syscall"
 	"time"
@@ -53,9 +54,9 @@ func (z *ZapWrapper) Error(msg string, args ...interface{}) {
 	z.logger.Errorw(msg, args...)
 }
 
-func (z *ZapWrapper) With(args ...interface{}) *ZapWrapper {
-	return &ZapWrapper{
-		logger: z.logger.With(args...),
+func (z *ZapWrapper) CloseWithLog(closer io.Closer) {
+	if err := closer.Close(); err != nil {
+		z.logger.Infow("failed to close", "err", err)
 	}
 }
 
