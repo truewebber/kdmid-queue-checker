@@ -35,7 +35,7 @@ func NewCheckSlot(
 func (c *CheckSlot) Handle(ctx context.Context, applicationID, applicationCD string) error {
 	const everyFiveMinutes = 5 * time.Minute
 
-	t := time.NewTicker(everyFiveMinutes)
+	t := time.NewTimer(0)
 	defer t.Stop()
 
 	for {
@@ -44,6 +44,8 @@ func (c *CheckSlot) Handle(ctx context.Context, applicationID, applicationCD str
 			if err := c.runSingleCheck(applicationID, applicationCD); err != nil {
 				c.logger.Error("check slot failed", "err", err)
 			}
+
+			t.Reset(everyFiveMinutes)
 		case <-ctx.Done():
 			return nil
 		}

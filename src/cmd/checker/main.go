@@ -33,6 +33,8 @@ func run(ctx context.Context, cfg *config, logger log.Logger) error {
 
 	app := service.NewApplication(appConfig, logger)
 
+	logger.Info("Application configured")
+
 	if err := app.Daemon.CheckSlot.Handle(ctx, cfg.Application.ID, cfg.Application.Secret); err != nil {
 		return fmt.Errorf("handle daemon check slot: %w", err)
 	}
