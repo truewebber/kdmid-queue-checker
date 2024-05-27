@@ -35,4 +35,4 @@ jobs:
           file: ./docker/checker/Dockerfile
           platforms: linux/arm64
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/${{ github.repository_name }}:latest
+          tags: ghcr.io/${{ github.repository }}:latest
