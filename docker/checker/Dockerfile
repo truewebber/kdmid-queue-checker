@@ -15,10 +15,11 @@ FROM debian:bookworm
 
 WORKDIR /home/checker
 
-COPY --from=builder --chown=checker /app/bin/checker /go/bin/playwright ./
+COPY --from=builder --chown=checker /app/bin/checker ./
+COPY --from=builder --chown=checker /go/bin/playwright ./
 
 RUN apt-get update && apt-get install -y ca-certificates tzdata \
     && ./playwright install --with-deps \
     && rm -rf /var/lib/apt/lists/* \
 
-CMD './checker'
+CMD '/home/checker/checker'
