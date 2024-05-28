@@ -8,4 +8,5 @@ type Application struct {
 
 type Daemon struct {
 	CheckSlot *daemon.CheckSlot
+	Bot       *daemon.NotifierBot
 }

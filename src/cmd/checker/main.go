@@ -7,6 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"golang.org/x/sync/errgroup"
+
 	"kdmid-queue-checker/domain/log"
 	"kdmid-queue-checker/service"
 )
@@ -35,8 +37,26 @@ func run(ctx context.Context, cfg *config, logger log.Logger) error {
 
 	logger.Info("Application configured")
 
-	if err := app.Daemon.CheckSlot.Handle(ctx, cfg.Application.ID, cfg.Application.Secret); err != nil {
-		return fmt.Errorf("handle daemon check slot: %w", err)
+	group, groupCtx := errgroup.WithContext(ctx)
+
+	group.Go(func() error {
+		if err := app.Daemon.CheckSlot.Handle(groupCtx, cfg.Application.ID, cfg.Application.Secret); err != nil {
+			return fmt.Errorf("handle daemon check slot: %w", err)
+		}
+
+		return nil
+	})
+
+	group.Go(func() error {
+		if err := app.Daemon.Bot.Run(groupCtx); err != nil {
+			return fmt.Errorf("run bot daemon: %w", err)
+		}
+
+		return nil
+	})
+
+	if err := group.Wait(); err != nil {
+		return fmt.Errorf("group wait: %w", err)
 	}
 
 	return nil

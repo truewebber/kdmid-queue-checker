@@ -15,11 +15,14 @@ func NewApplication(cfg *Config, logger log.Logger) *app.Application {
 	return &app.Application{
 		Daemon: app.Daemon{
 			CheckSlot: daemon.NewCheckSlot(dispatcher, solver, storage, logger),
+			Bot:       daemon.NewNotifierBot(cfg.TelegramBotToken, cfg.NotifierBotDirectory),
 		},
 	}
 }
 
 type Config struct {
-	TwoCaptchaAPIKey   string
-	ArtifactsDirectory string
+	TwoCaptchaAPIKey     string
+	ArtifactsDirectory   string
+	TelegramBotToken     string
+	NotifierBotDirectory string
 }
