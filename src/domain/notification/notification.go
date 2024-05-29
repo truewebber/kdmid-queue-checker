@@ -1,6 +1,9 @@
 package notification
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type Notification struct {
 	Images               []PNG
@@ -18,8 +21,17 @@ type Notifier interface {
 
 type Recipient struct {
 	TelegramID int64
+	ID, CD     string
 }
+
+var (
+	ErrStorageLimitExceeded = fmt.Errorf("storage limit exceeded")
+	ErrAlreadyExists        = fmt.Errorf("recipient already exists")
+	ErrNotExists            = fmt.Errorf("recipient not exists")
+)
 
 type Storage interface {
 	Register(Recipient) error
+	Unregister(Recipient) error
+	List() ([]Recipient, error)
 }

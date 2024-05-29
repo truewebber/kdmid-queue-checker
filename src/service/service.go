@@ -10,19 +10,27 @@ import (
 func NewApplication(cfg *Config, logger log.Logger) *app.Application {
 	dispatcher := adapter.MustNewChromeDispatcher()
 	solver := adapter.NewTwoCaptchaSolver(cfg.TwoCaptchaAPIKey)
-	storage := adapter.MustNewFileSystemCrawlStorage(cfg.ArtifactsDirectory, logger)
+	crawlStorage := adapter.MustNewFileSystemCrawlStorage(cfg.ArtifactsDirectory, logger)
+	recipientStorage := adapter.MustNewRecipientStorageFs(
+		cfg.RecipientStorage.Directory, cfg.RecipientStorage.Limit, logger,
+	)
 
 	return &app.Application{
 		Daemon: app.Daemon{
-			CheckSlot: daemon.NewCheckSlot(dispatcher, solver, storage, logger),
-			Bot:       daemon.NewNotifierBot(cfg.TelegramBotToken, cfg.NotifierBotDirectory),
+			CheckSlot: daemon.NewCheckSlot(dispatcher, solver, crawlStorage, recipientStorage, logger),
+			Bot:       daemon.MustNewNotifierBot(cfg.TelegramBotToken, recipientStorage, logger),
 		},
 	}
 }
 
 type Config struct {
-	TwoCaptchaAPIKey     string
-	ArtifactsDirectory   string
-	TelegramBotToken     string
-	NotifierBotDirectory string
+	TwoCaptchaAPIKey   string
+	ArtifactsDirectory string
+	TelegramBotToken   string
+	RecipientStorage   RecipientStorage
+}
+
+type RecipientStorage struct {
+	Directory string
+	Limit     uint8
 }

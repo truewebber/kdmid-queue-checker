@@ -8,47 +8,70 @@ import (
 	"kdmid-queue-checker/domain/captcha"
 	"kdmid-queue-checker/domain/crawl"
 	"kdmid-queue-checker/domain/log"
+	"kdmid-queue-checker/domain/notification"
 	"kdmid-queue-checker/domain/page"
 )
 
 type CheckSlot struct {
-	dispatcher page.Dispatcher
-	solver     captcha.Solver
-	storage    crawl.Storage
-	logger     log.Logger
+	dispatcher       page.Dispatcher
+	solver           captcha.Solver
+	crawlStorage     crawl.Storage
+	recipientStorage notification.Storage
+	logger           log.Logger
 }
 
 func NewCheckSlot(
 	dispatcher page.Dispatcher,
 	solver captcha.Solver,
-	storage crawl.Storage,
+	crawlStorage crawl.Storage,
+	recipientStorage notification.Storage,
 	logger log.Logger,
 ) *CheckSlot {
 	return &CheckSlot{
-		dispatcher: dispatcher,
-		solver:     solver,
-		storage:    storage,
-		logger:     logger,
+		dispatcher:       dispatcher,
+		solver:           solver,
+		crawlStorage:     crawlStorage,
+		recipientStorage: recipientStorage,
+		logger:           logger,
 	}
 }
 
-func (c *CheckSlot) Handle(ctx context.Context, applicationID, applicationCD string) error {
-	const everyFiveMinutes = 5 * time.Minute
-
-	t := time.NewTimer(0)
-	defer t.Stop()
-
+func (c *CheckSlot) Handle(ctx context.Context) error {
 	for {
 		select {
-		case <-t.C:
-			if err := c.runSingleCheck(applicationID, applicationCD); err != nil {
-				c.logger.Error("check slot failed", "err", err)
-			}
-
-			t.Reset(everyFiveMinutes)
 		case <-ctx.Done():
 			return nil
+		default:
+			c.runAllRecipients(ctx)
 		}
+	}
+}
+
+const everyFiveMinutes = 5 * time.Minute
+
+func (c *CheckSlot) runAllRecipients(ctx context.Context) {
+	t := time.NewTimer(everyFiveMinutes)
+	defer t.Stop()
+
+	recipients, err := c.recipientStorage.List()
+	if err != nil {
+		c.logger.Error("list recipients failed", "err", err)
+
+		<-t.C
+	}
+
+	for _, recipient := range recipients {
+		if err := c.runSingleCheck(recipient.ID, recipient.CD); err != nil {
+			c.logger.Error("check slot failed", "err", err)
+		}
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+		}
+
+		t.Reset(everyFiveMinutes)
 	}
 }
 
@@ -90,7 +113,7 @@ func (c *CheckSlot) runSingleCheck(applicationID, applicationCD string) error {
 		crawlResult.Two.SomethingInteresting ||
 		crawlResult.Three.SomethingInteresting
 
-	if err := c.storage.Save(crawlResult); err != nil {
+	if err := c.crawlStorage.Save(crawlResult); err != nil {
 		return fmt.Errorf("save crawl result: %w", err)
 	}
 

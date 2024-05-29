@@ -31,6 +31,11 @@ func run(ctx context.Context, cfg *config, logger log.Logger) error {
 	appConfig := &service.Config{
 		TwoCaptchaAPIKey:   cfg.TwoCaptcha.APIKey,
 		ArtifactsDirectory: cfg.ArtifactsDirectory,
+		TelegramBotToken:   cfg.TelegramBotToken,
+		RecipientStorage: service.RecipientStorage{
+			Directory: cfg.RecipientStorage.Directory,
+			Limit:     cfg.RecipientStorage.Limit,
+		},
 	}
 
 	app := service.NewApplication(appConfig, logger)
@@ -40,7 +45,7 @@ func run(ctx context.Context, cfg *config, logger log.Logger) error {
 	group, groupCtx := errgroup.WithContext(ctx)
 
 	group.Go(func() error {
-		if err := app.Daemon.CheckSlot.Handle(groupCtx, cfg.Application.ID, cfg.Application.Secret); err != nil {
+		if err := app.Daemon.CheckSlot.Handle(groupCtx); err != nil {
 			return fmt.Errorf("handle daemon check slot: %w", err)
 		}
 

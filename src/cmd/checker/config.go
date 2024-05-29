@@ -7,14 +7,15 @@ import (
 )
 
 type config struct {
-	Application struct {
-		ID     string `env:"APPLICATION_ID,required=true"`
-		Secret string `env:"APPLICATION_SECRET,required=true"`
-	}
 	TwoCaptcha struct {
 		APIKey string `env:"TWO_CAPTCHA_API_KEY,required=true"`
 	}
 	ArtifactsDirectory string `env:"ARTIFACTS_DIRECTORY,required=true"`
+	RecipientStorage   struct {
+		Directory string `env:"RECIPIENT_STORAGE_DIRECTORY,required=true"`
+		Limit     uint8  `env:"RECIPIENT_STORAGE_LIMIT,required=true"`
+	}
+	TelegramBotToken string `env:"TELEGRAM_BOT_TOKEN,required=true"`
 }
 
 func mustLoadConfig() *config {

@@ -55,6 +55,10 @@ func (z *ZapWrapper) Error(msg string, args ...interface{}) {
 }
 
 func (z *ZapWrapper) CloseWithLog(closer io.Closer) {
+	if closer == nil {
+		return
+	}
+
 	if err := closer.Close(); err != nil {
 		z.logger.Infow("failed to close", "err", err)
 	}
