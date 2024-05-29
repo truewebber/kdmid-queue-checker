@@ -15,10 +15,14 @@ func NewApplication(cfg *Config, logger log.Logger) *app.Application {
 		cfg.RecipientStorage.Directory, cfg.RecipientStorage.Limit, logger,
 	)
 
+	telegramNotifier := adapter.MustNewTelegramNotifier(cfg.TelegramBotToken)
+
 	return &app.Application{
 		Daemon: app.Daemon{
-			CheckSlot: daemon.NewCheckSlot(dispatcher, solver, crawlStorage, recipientStorage, nil, logger),
-			Bot:       daemon.MustNewNotifierBot(cfg.TelegramBotToken, recipientStorage, logger),
+			CheckSlot: daemon.NewCheckSlot(
+				dispatcher, solver, crawlStorage, recipientStorage, telegramNotifier, logger,
+			),
+			Bot: daemon.MustNewNotifierBot(cfg.TelegramBotToken, recipientStorage, logger),
 		},
 	}
 }

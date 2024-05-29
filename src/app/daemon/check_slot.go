@@ -64,7 +64,7 @@ func (c *CheckSlot) runAllRecipients(ctx context.Context) {
 	}
 
 	for _, recipient := range recipients {
-		if err := c.runSingleCheck(recipient.ID, recipient.CD); err != nil {
+		if err := c.runSingleCheck(ctx, &recipient); err != nil {
 			c.logger.Error("check slot failed", "err", err)
 		}
 
@@ -78,21 +78,78 @@ func (c *CheckSlot) runAllRecipients(ctx context.Context) {
 	}
 }
 
-func (c *CheckSlot) runSingleCheck(applicationID, applicationCD string) error {
+func (c *CheckSlot) runSingleCheck(
+	ctx context.Context,
+	recipient *notification.Recipient,
+) error {
 	c.logger.Info("start run single check")
 
-	crawlResult, err := c.crawl(applicationID, applicationCD)
-	if err != nil {
-		return fmt.Errorf("crawl failed: %w", err)
+	crawlResult, crawlErr := c.crawl(recipient.ID, recipient.CD)
+	if crawlErr != nil {
+		if notifyErr := c.notify(ctx, crawlResult, crawlErr, recipient); notifyErr != nil {
+			return fmt.Errorf("notify failed: %w: crawl failed: %w", notifyErr, crawlErr)
+		}
+
+		return fmt.Errorf("crawl failed: %w", crawlErr)
 	}
 
-	if err := c.crawlStorage.Save(crawlResult); err != nil {
-		return fmt.Errorf("save crawl result: %w", err)
+	if saveErr := c.crawlStorage.Save(crawlResult); saveErr != nil {
+		if notifyErr := c.notify(ctx, crawlResult, saveErr, recipient); notifyErr != nil {
+			return fmt.Errorf("notify failed: %w: save crawl failed: %w", notifyErr, saveErr)
+		}
+
+		return fmt.Errorf("save crawl result: %w", saveErr)
+	}
+
+	if crawlResult.SomethingInteresting {
+		if notifyErr := c.notify(ctx, crawlResult, nil, recipient); notifyErr != nil {
+			return fmt.Errorf("notify failed: %w", notifyErr)
+		}
 	}
 
 	c.logger.Info("run single check finished", "something_interesting", crawlResult.SomethingInteresting)
 
 	return nil
+}
+
+func (c *CheckSlot) notify(
+	ctx context.Context,
+	result *crawl.Result,
+	crawlErr error,
+	recipient *notification.Recipient,
+) error {
+	n := c.buildNotification(result, crawlErr)
+
+	if err := c.notifier.Notify(ctx, n, recipient); err != nil {
+		c.logger.Error("notify failed", "err", err)
+	}
+
+	return nil
+}
+
+func (c *CheckSlot) buildNotification(result *crawl.Result, err error) *notification.Notification {
+	return &notification.Notification{
+		Images:               c.buildNotificationImages(result),
+		CrawledAt:            result.RanAt,
+		Error:                err,
+		SomethingInteresting: result.SomethingInteresting,
+	}
+}
+
+func (c *CheckSlot) buildNotificationImages(result *crawl.Result) []notification.PNG {
+	images := make([]notification.PNG, 0)
+
+	for _, stat := range []page.Stat{result.One, result.Two, result.Three} {
+		if len(stat.Screenshot) != 0 {
+			images = append(images, notification.PNG(stat.Screenshot))
+		}
+
+		if stat.Captcha.Presented {
+			images = append(images, notification.PNG(stat.Captcha.Image))
+		}
+	}
+
+	return images
 }
 
 func (c *CheckSlot) crawl(applicationID, applicationCD string) (*crawl.Result, error) {

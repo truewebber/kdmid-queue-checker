@@ -1,13 +1,13 @@
 package notification
 
 import (
+	"context"
 	"fmt"
 	"time"
 )
 
 type Notification struct {
 	Images               []PNG
-	Text                 string
 	CrawledAt            time.Time
 	Error                error
 	SomethingInteresting bool
@@ -16,7 +16,7 @@ type Notification struct {
 type PNG []byte
 
 type Notifier interface {
-	Notify(Notification, Recipient) error
+	Notify(context.Context, *Notification, *Recipient) error
 }
 
 type Recipient struct {
