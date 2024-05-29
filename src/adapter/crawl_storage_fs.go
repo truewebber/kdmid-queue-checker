@@ -36,7 +36,7 @@ func MustNewFileSystemCrawlStorage(dir string, logger log.Logger) crawl.Storage 
 	return storage
 }
 
-func (f *fileSystemCrawlStorage) Save(result crawl.Result) error {
+func (f *fileSystemCrawlStorage) Save(result *crawl.Result) error {
 	dateDirName := result.RanAt.Format(time.DateOnly)
 	timeDirName := result.RanAt.Format(time.TimeOnly)
 

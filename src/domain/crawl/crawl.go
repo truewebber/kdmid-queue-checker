@@ -13,6 +13,6 @@ type Result struct {
 }
 
 type Storage interface {
-	Save(Result) error
+	Save(*Result) error
 	List(offset, limit int) ([]Result, error)
 }

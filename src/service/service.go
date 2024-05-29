@@ -17,7 +17,7 @@ func NewApplication(cfg *Config, logger log.Logger) *app.Application {
 
 	return &app.Application{
 		Daemon: app.Daemon{
-			CheckSlot: daemon.NewCheckSlot(dispatcher, solver, crawlStorage, recipientStorage, logger),
+			CheckSlot: daemon.NewCheckSlot(dispatcher, solver, crawlStorage, recipientStorage, nil, logger),
 			Bot:       daemon.MustNewNotifierBot(cfg.TelegramBotToken, recipientStorage, logger),
 		},
 	}

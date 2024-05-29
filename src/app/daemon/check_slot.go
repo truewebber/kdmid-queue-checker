@@ -17,6 +17,7 @@ type CheckSlot struct {
 	solver           captcha.Solver
 	crawlStorage     crawl.Storage
 	recipientStorage notification.Storage
+	notifier         notification.Notifier
 	logger           log.Logger
 }
 
@@ -25,6 +26,7 @@ func NewCheckSlot(
 	solver captcha.Solver,
 	crawlStorage crawl.Storage,
 	recipientStorage notification.Storage,
+	notifier notification.Notifier,
 	logger log.Logger,
 ) *CheckSlot {
 	return &CheckSlot{
@@ -32,6 +34,7 @@ func NewCheckSlot(
 		solver:           solver,
 		crawlStorage:     crawlStorage,
 		recipientStorage: recipientStorage,
+		notifier:         notifier,
 		logger:           logger,
 	}
 }
@@ -78,40 +81,10 @@ func (c *CheckSlot) runAllRecipients(ctx context.Context) {
 func (c *CheckSlot) runSingleCheck(applicationID, applicationCD string) error {
 	c.logger.Info("start run single check")
 
-	navigator, err := c.dispatcher.NewNavigator(applicationID, applicationCD)
+	crawlResult, err := c.crawl(applicationID, applicationCD)
 	if err != nil {
-		return fmt.Errorf("new navigator: %w", err)
+		return fmt.Errorf("crawl failed: %w", err)
 	}
-
-	defer c.logger.CloseWithLog(navigator)
-
-	crawlResult := crawl.Result{
-		RanAt: time.Now(),
-	}
-
-	crawlResult.One, err = navigator.OpenPageToAuthorize()
-	if err != nil {
-		return fmt.Errorf("open page to authorize: %w", err)
-	}
-
-	code, err := c.solver.Solve(crawlResult.One.Captcha.Image)
-	if err != nil {
-		return fmt.Errorf("solve captcha: %w", err)
-	}
-
-	crawlResult.Two, err = navigator.SubmitAuthorization(code)
-	if err != nil {
-		return fmt.Errorf("submit authorization: %w", err)
-	}
-
-	crawlResult.Three, err = navigator.OpenSlotBookingPage()
-	if err != nil {
-		return fmt.Errorf("open slot booking page: %w", err)
-	}
-
-	crawlResult.SomethingInteresting = crawlResult.One.SomethingInteresting ||
-		crawlResult.Two.SomethingInteresting ||
-		crawlResult.Three.SomethingInteresting
 
 	if err := c.crawlStorage.Save(crawlResult); err != nil {
 		return fmt.Errorf("save crawl result: %w", err)
@@ -120,4 +93,43 @@ func (c *CheckSlot) runSingleCheck(applicationID, applicationCD string) error {
 	c.logger.Info("run single check finished", "something_interesting", crawlResult.SomethingInteresting)
 
 	return nil
+}
+
+func (c *CheckSlot) crawl(applicationID, applicationCD string) (*crawl.Result, error) {
+	navigator, err := c.dispatcher.NewNavigator(applicationID, applicationCD)
+	if err != nil {
+		return nil, fmt.Errorf("new navigator: %w", err)
+	}
+
+	defer c.logger.CloseWithLog(navigator)
+
+	crawlResult := &crawl.Result{
+		RanAt: time.Now(),
+	}
+
+	crawlResult.One, err = navigator.OpenPageToAuthorize()
+	if err != nil {
+		return crawlResult, fmt.Errorf("open page to authorize: %w", err)
+	}
+
+	code, err := c.solver.Solve(crawlResult.One.Captcha.Image)
+	if err != nil {
+		return crawlResult, fmt.Errorf("solve captcha: %w", err)
+	}
+
+	crawlResult.Two, err = navigator.SubmitAuthorization(code)
+	if err != nil {
+		return crawlResult, fmt.Errorf("submit authorization: %w", err)
+	}
+
+	crawlResult.Three, err = navigator.OpenSlotBookingPage()
+	if err != nil {
+		return crawlResult, fmt.Errorf("open slot booking page: %w", err)
+	}
+
+	crawlResult.SomethingInteresting = crawlResult.One.SomethingInteresting ||
+		crawlResult.Two.SomethingInteresting ||
+		crawlResult.Three.SomethingInteresting
+
+	return crawlResult, nil
 }
