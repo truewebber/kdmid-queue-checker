@@ -3,6 +3,9 @@ package daemon
 import (
 	"context"
 	"fmt"
+	"github.com/robfig/cron/v3"
+	"strconv"
+	"strings"
 	"time"
 
 	"kdmid-queue-checker/domain/captcha"
@@ -40,41 +43,123 @@ func NewCheckSlot(
 }
 
 func (c *CheckSlot) Handle(ctx context.Context) error {
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		default:
+	const maxAmountOfTriggersADay = 16
+
+	startCheckFrom := "06:30"
+	startCheckTil := "22:00"
+
+	cronRules, err := c.getCronRules(startCheckFrom, startCheckTil, maxAmountOfTriggersADay)
+	if err != nil {
+		return fmt.Errorf("get cron rules: %w", err)
+	}
+
+	cr := cron.New(cron.WithSeconds())
+
+	for _, cronRule := range cronRules {
+		if _, err := cr.AddFunc(cronRule, func() {
 			c.runAllRecipients(ctx)
+		}); err != nil {
+			return fmt.Errorf("cron add func: %w", err)
 		}
+
+		c.logger.Info("rule registered", "_", cronRule)
+	}
+
+	cr.Start()
+
+	select {
+	case <-ctx.Done():
+		exitCtx := cr.Stop()
+		<-exitCtx.Done()
+
+		return nil
 	}
 }
 
-const everyFiveMinutes = 5 * time.Minute
+func (c *CheckSlot) parseTime(timeStr string) (int, int, error) {
+	parts := strings.Split(timeStr, ":")
+	if len(parts) != 2 {
+		return 0, 0, fmt.Errorf("invalid time format: %s", timeStr)
+	}
+
+	hour, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, 0, err
+	}
+
+	if hour < 0 || hour > 23 {
+		return 0, 0, fmt.Errorf("invalid hour: %d", hour)
+	}
+
+	minute, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, 0, err
+	}
+
+	if minute < 0 || minute > 59 {
+		return 0, 0, fmt.Errorf("invalid minute: %d", minute)
+	}
+
+	return hour, minute, nil
+}
+
+func (c *CheckSlot) getCronRules(startCheckFrom, startCheckTil string, amountOfTriggersADay int) ([]string, error) {
+	if amountOfTriggersADay <= 0 {
+		return nil, fmt.Errorf("amountOfTriggersADay must be greater than 0")
+	}
+
+	startHour, startMinute, err := c.parseTime(startCheckFrom)
+	if err != nil {
+		return nil, fmt.Errorf("invalid start time: %w", err)
+	}
+
+	endHour, endMinute, err := c.parseTime(startCheckTil)
+	if err != nil {
+		return nil, fmt.Errorf("invalid end time: %w", err)
+	}
+
+	startTime := time.Date(0, time.January, 1, startHour, startMinute, 0, 0, time.UTC)
+	endTime := time.Date(0, time.January, 1, endHour, endMinute, 0, 0, time.UTC)
+
+	if endTime.Before(startTime) {
+		return nil, fmt.Errorf("end time must be after start time")
+	}
+
+	totalMinutes := int(endTime.Sub(startTime).Minutes())
+	if totalMinutes == 0 {
+		totalMinutes = 24 * 60
+	}
+
+	intervalMinutes := 1
+
+	if amountOfTriggersADay > 1 {
+		intervalMinutes = totalMinutes / (amountOfTriggersADay - 1)
+		if intervalMinutes < 1 {
+			return nil, fmt.Errorf("intervalMinutes must be greater than or equal to 1")
+		}
+	}
+
+	cronRules := make([]string, 0, amountOfTriggersADay)
+
+	for i := 0; i < amountOfTriggersADay; i++ {
+		triggerTime := startTime.Add(time.Duration(i*intervalMinutes) * time.Minute)
+		cronRule := fmt.Sprintf("%d %d %d * * *", triggerTime.Second(), triggerTime.Minute(), triggerTime.Hour())
+		cronRules = append(cronRules, cronRule)
+	}
+
+	return cronRules, nil
+}
 
 func (c *CheckSlot) runAllRecipients(ctx context.Context) {
-	t := time.NewTimer(everyFiveMinutes)
-	defer t.Stop()
-
 	recipients, err := c.recipientStorage.List()
 	if err != nil {
 		c.logger.Error("list recipients failed", "err", err)
-
-		<-t.C
 	}
 
 	for _, recipient := range recipients {
 		if err := c.runSingleCheck(ctx, &recipient); err != nil {
-			c.logger.Error("check slot failed", "err", err)
+			c.logger.Error("check slot failed", "recipient", recipient, "err", err)
 		}
-
-		select {
-		case <-ctx.Done():
-			return
-		case <-t.C:
-		}
-
-		t.Reset(everyFiveMinutes)
 	}
 }
 
