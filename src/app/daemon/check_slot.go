@@ -122,7 +122,7 @@ func (c *CheckSlot) getCronRules(startCheckFrom, startCheckTil string, amountOfT
 	endTime := time.Date(0, time.January, 1, endHour, endMinute, 0, 0, time.UTC)
 
 	if endTime.Before(startTime) {
-		return nil, fmt.Errorf("end time must be after start time")
+		endTime = endTime.Add(24 * time.Hour)
 	}
 
 	totalMinutes := int(endTime.Sub(startTime).Minutes())
