@@ -43,12 +43,12 @@ func NewCheckSlot(
 }
 
 func (c *CheckSlot) Handle(ctx context.Context) error {
-	const maxAmountOfTriggersADay = 16
+	const maxAmountOfTriggersADay = 20
 
-	startCheckFrom := "06:30"
-	startCheckTil := "22:00"
+	checkFrom := "08:00"
+	checkTil := "02:00"
 
-	cronRules, err := c.getCronRules(startCheckFrom, startCheckTil, maxAmountOfTriggersADay)
+	cronRules, err := c.getCronRules(checkFrom, checkTil, maxAmountOfTriggersADay)
 	if err != nil {
 		return fmt.Errorf("get cron rules: %w", err)
 	}
