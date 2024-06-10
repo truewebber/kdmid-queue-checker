@@ -3,10 +3,11 @@ package daemon
 import (
 	"context"
 	"fmt"
-	"github.com/robfig/cron/v3"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/robfig/cron/v3"
 
 	"kdmid-queue-checker/domain/captcha"
 	"kdmid-queue-checker/domain/crawl"
@@ -178,7 +179,7 @@ func (c *CheckSlot) runSingleCheck(
 		return fmt.Errorf("crawl failed: %w", crawlErr)
 	}
 
-	if saveErr := c.crawlStorage.Save(crawlResult); saveErr != nil {
+	if saveErr := c.crawlStorage.Save(recipient.TelegramID, crawlResult); saveErr != nil {
 		if notifyErr := c.notify(ctx, crawlResult, saveErr, recipient); notifyErr != nil {
 			return fmt.Errorf("notify failed: %w: save crawl failed: %w", notifyErr, saveErr)
 		}

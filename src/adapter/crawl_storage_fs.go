@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"kdmid-queue-checker/domain/crawl"
@@ -36,11 +37,14 @@ func MustNewFileSystemCrawlStorage(dir string, logger log.Logger) crawl.Storage 
 	return storage
 }
 
-func (f *fileSystemCrawlStorage) Save(result *crawl.Result) error {
+const decimal = 10
+
+func (f *fileSystemCrawlStorage) Save(userID int64, result *crawl.Result) error {
+	userDirName := strconv.FormatInt(userID, decimal)
 	dateDirName := result.RanAt.Format(time.DateOnly)
 	timeDirName := result.RanAt.Format(time.TimeOnly)
 
-	crawlDir := filepath.Join(f.dir, dateDirName, timeDirName)
+	crawlDir := filepath.Join(f.dir, userDirName, dateDirName, timeDirName)
 
 	firstDir := filepath.Join(crawlDir, "1")
 	if err := f.saveStat(firstDir, result.One); err != nil {
@@ -112,7 +116,12 @@ func (f *fileSystemCrawlStorage) saveFile(filePath string, fileBytes []byte) err
 	return nil
 }
 
-func (f *fileSystemCrawlStorage) List(offset, limit int) ([]crawl.Result, error) {
+func (f *fileSystemCrawlStorage) ListUsers() ([]int64, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f *fileSystemCrawlStorage) ListResults(userID int64, date time.Time) ([]crawl.Result, error) {
 	//TODO implement me
 	panic("implement me")
 }

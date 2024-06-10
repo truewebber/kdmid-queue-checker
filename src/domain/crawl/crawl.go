@@ -13,6 +13,7 @@ type Result struct {
 }
 
 type Storage interface {
-	Save(*Result) error
-	List(offset, limit int) ([]Result, error)
+	Save(userID int64, result *Result) error
+	ListUsers() ([]int64, error)
+	ListResults(userID int64, date time.Time) ([]Result, error)
 }
