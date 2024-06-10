@@ -31,7 +31,7 @@ var (
 )
 
 type Storage interface {
-	Register(Recipient) error
-	Unregister(Recipient) error
-	List() ([]Recipient, error)
+	Register(context.Context, Recipient) error
+	Unregister(context.Context, Recipient) error
+	List(context.Context) ([]Recipient, error)
 }

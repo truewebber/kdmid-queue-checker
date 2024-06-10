@@ -16,6 +16,7 @@ type config struct {
 		Limit     uint8  `env:"RECIPIENT_STORAGE_LIMIT,required=true"`
 	}
 	TelegramBotToken string `env:"TELEGRAM_BOT_TOKEN,required=true"`
+	AppHostPort      string `env:"APP_HOST_PORT,required=true"`
 }
 
 func mustLoadConfig() *config {

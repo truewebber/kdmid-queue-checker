@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,6 +17,11 @@ type fileSystemCrawlStorage struct {
 	dir    string
 	logger log.Logger
 }
+
+const (
+	decimal = 10
+	bitSize = 64
+)
 
 func NewFileSystemCrawlStorage(dir string, logger log.Logger) (crawl.Storage, error) {
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -37,9 +43,7 @@ func MustNewFileSystemCrawlStorage(dir string, logger log.Logger) crawl.Storage 
 	return storage
 }
 
-const decimal = 10
-
-func (f *fileSystemCrawlStorage) Save(userID int64, result *crawl.Result) error {
+func (f *fileSystemCrawlStorage) Save(_ context.Context, userID int64, result *crawl.Result) error {
 	userDirName := strconv.FormatInt(userID, decimal)
 	dateDirName := result.RanAt.Format(time.DateOnly)
 	timeDirName := result.RanAt.Format(time.TimeOnly)
@@ -116,12 +120,34 @@ func (f *fileSystemCrawlStorage) saveFile(filePath string, fileBytes []byte) err
 	return nil
 }
 
-func (f *fileSystemCrawlStorage) ListUsers() ([]int64, error) {
-	//TODO implement me
-	panic("implement me")
+func (f *fileSystemCrawlStorage) ListUsers(_ context.Context) ([]int64, error) {
+	entries, osErr := os.ReadDir(f.dir)
+	if osErr != nil {
+		return nil, fmt.Errorf("read directory: %w", osErr)
+	}
+
+	userIDs := make([]int64, 0, len(entries))
+
+	for i := range entries {
+		if !entries[i].IsDir() {
+			continue
+		}
+
+		dirName := entries[i].Name()
+		userID, err := strconv.ParseInt(dirName, decimal, bitSize)
+		if err != nil {
+			return nil, fmt.Errorf("parse user id - `%v`: %w", dirName, err)
+		}
+
+		userIDs = append(userIDs, userID)
+	}
+
+	return userIDs, nil
 }
 
-func (f *fileSystemCrawlStorage) ListResults(userID int64, date time.Time) ([]crawl.Result, error) {
+func (f *fileSystemCrawlStorage) ListResults(
+	_ context.Context, userID int64, date time.Time,
+) ([]crawl.Result, error) {
 	//TODO implement me
 	panic("implement me")
 }

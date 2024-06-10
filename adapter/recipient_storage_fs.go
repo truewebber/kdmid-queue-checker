@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -59,7 +60,7 @@ func MustNewRecipientStorageFs(dir string, storageLimit uint8, logger log.Logger
 	return storage
 }
 
-func (r *recipientStorageFs) Register(domainRecipient notification.Recipient) error {
+func (r *recipientStorageFs) Register(_ context.Context, domainRecipient notification.Recipient) error {
 	r.m.Lock()
 	defer r.m.Unlock()
 
@@ -74,7 +75,7 @@ func (r *recipientStorageFs) Register(domainRecipient notification.Recipient) er
 	return nil
 }
 
-func (r *recipientStorageFs) Unregister(domainRecipient notification.Recipient) error {
+func (r *recipientStorageFs) Unregister(_ context.Context, domainRecipient notification.Recipient) error {
 	r.m.Lock()
 	defer r.m.Unlock()
 
@@ -89,7 +90,7 @@ func (r *recipientStorageFs) Unregister(domainRecipient notification.Recipient) 
 	return nil
 }
 
-func (r *recipientStorageFs) List() ([]notification.Recipient, error) {
+func (r *recipientStorageFs) List(_ context.Context) ([]notification.Recipient, error) {
 	r.m.RLock()
 	defer r.m.RUnlock()
 

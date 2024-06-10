@@ -152,7 +152,7 @@ func (c *CheckSlot) getCronRules(startCheckFrom, startCheckTil string, amountOfT
 }
 
 func (c *CheckSlot) runAllRecipients(ctx context.Context) {
-	recipients, err := c.recipientStorage.List()
+	recipients, err := c.recipientStorage.List(ctx)
 	if err != nil {
 		c.logger.Error("list recipients failed", "err", err)
 	}
@@ -179,7 +179,7 @@ func (c *CheckSlot) runSingleCheck(
 		return fmt.Errorf("crawl failed: %w", crawlErr)
 	}
 
-	if saveErr := c.crawlStorage.Save(recipient.TelegramID, crawlResult); saveErr != nil {
+	if saveErr := c.crawlStorage.Save(ctx, recipient.TelegramID, crawlResult); saveErr != nil {
 		if notifyErr := c.notify(ctx, crawlResult, saveErr, recipient); notifyErr != nil {
 			return fmt.Errorf("notify failed: %w: save crawl failed: %w", notifyErr, saveErr)
 		}

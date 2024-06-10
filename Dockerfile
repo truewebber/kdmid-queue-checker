@@ -4,10 +4,9 @@ WORKDIR /app
 
 COPY . .
 
-RUN PWGO_VER=$(grep -oE "playwright-go v\S+" /app/src/go.mod | sed 's/playwright-go //g') \
+RUN PWGO_VER=$(grep -oE "playwright-go v\S+" /app/go.mod | sed 's/playwright-go //g') \
     && go install github.com/playwright-community/playwright-go/cmd/playwright@${PWGO_VER}
 
-WORKDIR /app/src
 RUN go build -o /app/bin/checker ./cmd/checker
 
 FROM debian:bookworm

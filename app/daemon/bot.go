@@ -130,7 +130,7 @@ func (b *NotifierBot) registerHandler(ctx context.Context, telegramBot *bot.Bot,
 		CD:         args[1],
 	}
 
-	storageErr := b.storage.Register(r)
+	storageErr := b.storage.Register(ctx, r)
 
 	if errors.Is(storageErr, notification.ErrStorageLimitExceeded) {
 		if _, err := telegramBot.SendMessage(ctx, &bot.SendMessageParams{
@@ -189,7 +189,7 @@ func (b *NotifierBot) unregisterHandler(ctx context.Context, telegramBot *bot.Bo
 		TelegramID: chatID,
 	}
 
-	storageErr := b.storage.Unregister(r)
+	storageErr := b.storage.Unregister(ctx, r)
 
 	if errors.Is(storageErr, notification.ErrNotExists) {
 		if _, err := telegramBot.SendMessage(ctx, &bot.SendMessageParams{

@@ -7,6 +7,8 @@ import (
 )
 
 func TestGetCronRules(t *testing.T) {
+	t.Parallel()
+
 	type testCase struct {
 		startCheckFrom       string
 		startCheckTil        string
@@ -43,18 +45,22 @@ func TestGetCronRules(t *testing.T) {
 		{"10:00", "10:01", 3, nil, true},
 	}
 
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("%s_%s_%d", tc.startCheckFrom, tc.startCheckTil, tc.amountOfTriggersADay), func(t *testing.T) {
+	for _, tt := range testCases {
+		tt := tt
+
+		t.Run(fmt.Sprintf("%s_%s_%d", tt.startCheckFrom, tt.startCheckTil, tt.amountOfTriggersADay), func(t *testing.T) {
+			t.Parallel()
+
 			c := &CheckSlot{}
 
-			cronRules, err := c.getCronRules(tc.startCheckFrom, tc.startCheckTil, tc.amountOfTriggersADay)
+			cronRules, err := c.getCronRules(tt.startCheckFrom, tt.startCheckTil, tt.amountOfTriggersADay)
 
-			if (err != nil) != tc.expectError {
-				t.Fatalf("expected error: %v, got: %v", tc.expectError, err)
+			if (err != nil) != tt.expectError {
+				t.Fatalf("expected error: %v, got: %v", tt.expectError, err)
 			}
 
-			if !tc.expectError && !reflect.DeepEqual(cronRules, tc.expectedOutput) {
-				t.Errorf("expected: %v, got: %v", tc.expectedOutput, cronRules)
+			if !tt.expectError && !reflect.DeepEqual(cronRules, tt.expectedOutput) {
+				t.Errorf("expected: %v, got: %v", tt.expectedOutput, cronRules)
 			}
 		})
 	}

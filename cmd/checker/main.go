@@ -10,6 +10,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"kdmid-queue-checker/domain/log"
+	"kdmid-queue-checker/port"
 	"kdmid-queue-checker/service"
 )
 
@@ -42,6 +43,8 @@ func run(ctx context.Context, cfg *config, logger log.Logger) error {
 
 	logger.Info("Application configured")
 
+	httpServer := port.NewHTTP(cfg.AppHostPort, app, logger)
+
 	group, groupCtx := errgroup.WithContext(ctx)
 
 	group.Go(func() error {
@@ -55,6 +58,14 @@ func run(ctx context.Context, cfg *config, logger log.Logger) error {
 	group.Go(func() error {
 		if err := app.Daemon.Bot.Run(groupCtx); err != nil {
 			return fmt.Errorf("run bot daemon: %w", err)
+		}
+
+		return nil
+	})
+
+	group.Go(func() error {
+		if err := httpServer.Start(groupCtx); err != nil {
+			return fmt.Errorf("run http server: %w", err)
 		}
 
 		return nil

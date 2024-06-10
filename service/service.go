@@ -4,6 +4,7 @@ import (
 	"kdmid-queue-checker/adapter"
 	"kdmid-queue-checker/app"
 	"kdmid-queue-checker/app/daemon"
+	"kdmid-queue-checker/app/query"
 	"kdmid-queue-checker/domain/log"
 )
 
@@ -23,6 +24,9 @@ func NewApplication(cfg *Config, logger log.Logger) *app.Application {
 				dispatcher, solver, crawlStorage, recipientStorage, telegramNotifier, logger,
 			),
 			Bot: daemon.MustNewNotifierBot(cfg.TelegramBotToken, recipientStorage, logger),
+		},
+		Query: app.Query{
+			ListUsers: query.NewListUsersHandler(recipientStorage, crawlStorage),
 		},
 	}
 }
