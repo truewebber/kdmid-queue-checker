@@ -56,6 +56,7 @@ const head = "<head><title>kdmid bot artifact viewer</title>" +
 	".crawl_interesting { background-color: #99ffcc; }" +
 	".user { padding: 10px 0; }" +
 	".screenshot { width: 300px; padding: 0 5px; }" +
+	".extended { width: 1000px; }" +
 	".captcha { width: 100px; padding: 0 5px; }" +
 	".hr { margin: 0 0 10px 0; border-bottom: 2px solid #555 }" +
 	"a { color: blue; text-decoration: none; }" +
@@ -179,7 +180,29 @@ func (s *HTTPServer) openCrawlListPage(w http.ResponseWriter, r *http.Request) {
 		html += "</div>"
 	}
 
-	html += "</div></div></body></html>"
+	html += "</div></div>" +
+		"<script type=\"text/javascript\">" +
+		"var screenshots = document.querySelectorAll('.screenshot');" +
+		"for (i = 0; i < screenshots.length; i++) {" +
+		"  screenshots[i].addEventListener('click', function() {" +
+		"    if (this.classList.contains(\"extended\")) {" +
+		"      this.classList.remove(\"extended\");" +
+		"" +
+		"      return;" +
+		"    }" +
+		"" +
+		"    shrinkEveryScreenshot();" +
+		"    this.classList.add(\"extended\");" +
+		"  });" +
+		"}" +
+		"" +
+		"function shrinkEveryScreenshot() {" +
+		"  for (i = 0; i < screenshots.length; i++) {" +
+		"    screenshots[i].classList.remove(\"extended\");" +
+		"  }" +
+		"}" +
+		"</script>" +
+		"</body></html>"
 
 	s.responseHTML(html, w)
 }
