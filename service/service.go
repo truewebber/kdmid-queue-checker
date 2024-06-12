@@ -26,7 +26,8 @@ func NewApplication(cfg *Config, logger log.Logger) *app.Application {
 			Bot: daemon.MustNewNotifierBot(cfg.TelegramBotToken, recipientStorage, logger),
 		},
 		Query: app.Query{
-			ListUsers: query.NewListUsersHandler(recipientStorage, crawlStorage),
+			ListUsers:  query.NewListUsersHandler(recipientStorage, crawlStorage),
+			ListCrawls: query.NewListCrawlsHandler(crawlStorage),
 		},
 	}
 }

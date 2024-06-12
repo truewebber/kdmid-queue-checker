@@ -47,21 +47,21 @@ func run(ctx context.Context, cfg *config, logger log.Logger) error {
 
 	group, groupCtx := errgroup.WithContext(ctx)
 
-	group.Go(func() error {
-		if err := app.Daemon.CheckSlot.Handle(groupCtx); err != nil {
-			return fmt.Errorf("handle daemon check slot: %w", err)
-		}
-
-		return nil
-	})
-
-	group.Go(func() error {
-		if err := app.Daemon.Bot.Run(groupCtx); err != nil {
-			return fmt.Errorf("run bot daemon: %w", err)
-		}
-
-		return nil
-	})
+	//group.Go(func() error {
+	//	if err := app.Daemon.CheckSlot.Handle(groupCtx); err != nil {
+	//		return fmt.Errorf("handle daemon check slot: %w", err)
+	//	}
+	//
+	//	return nil
+	//})
+	//
+	//group.Go(func() error {
+	//	if err := app.Daemon.Bot.Run(groupCtx); err != nil {
+	//		return fmt.Errorf("run bot daemon: %w", err)
+	//	}
+	//
+	//	return nil
+	//})
 
 	group.Go(func() error {
 		if err := httpServer.Start(groupCtx); err != nil {

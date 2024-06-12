@@ -16,5 +16,6 @@ type Daemon struct {
 }
 
 type Query struct {
-	ListUsers *query.ListUsersHandler
+	ListUsers  *query.ListUsersHandler
+	ListCrawls *query.ListCrawlsHandler
 }

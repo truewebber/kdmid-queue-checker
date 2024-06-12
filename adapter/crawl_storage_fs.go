@@ -2,7 +2,9 @@ package adapter
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -146,8 +148,141 @@ func (f *fileSystemCrawlStorage) ListUsers(_ context.Context) ([]int64, error) {
 }
 
 func (f *fileSystemCrawlStorage) ListResults(
-	_ context.Context, userID int64, date time.Time,
+	ctx context.Context, userID int64, date time.Time,
 ) ([]crawl.Result, error) {
-	//TODO implement me
-	panic("implement me")
+	userDirName := strconv.FormatInt(userID, decimal)
+	dateDirName := date.Format(time.DateOnly)
+
+	dailyCrawlsDir := filepath.Join(f.dir, userDirName, dateDirName)
+
+	crawlTimes, osErr := os.ReadDir(dailyCrawlsDir)
+	if osErr != nil {
+		return nil, fmt.Errorf("read directory: %w", osErr)
+	}
+
+	crawlResults := make([]crawl.Result, 0, len(crawlTimes))
+
+	for i := range crawlTimes {
+		if !crawlTimes[i].IsDir() {
+			continue
+		}
+
+		crawlResultDir := filepath.Join(dailyCrawlsDir, crawlTimes[i].Name())
+
+		crawlResult, err := f.readCrawl(ctx, crawlResultDir)
+		if err != nil {
+			return nil, fmt.Errorf("read crawl: %w", err)
+		}
+
+		crawlResult.RanAt, err = time.Parse(time.DateTime, dateDirName+" "+crawlTimes[i].Name())
+		if err != nil {
+			return nil, fmt.Errorf("time parse: %w", err)
+		}
+
+		crawlResults = append(crawlResults, crawlResult)
+	}
+
+	return crawlResults, nil
+}
+
+func (f *fileSystemCrawlStorage) readCrawl(ctx context.Context, crawlDir string) (crawl.Result, error) {
+	var (
+		result = crawl.Result{}
+		err    error
+	)
+
+	firstDir := filepath.Join(crawlDir, "1")
+	result.One, err = f.readStat(ctx, firstDir)
+	if err != nil {
+		return crawl.Result{}, fmt.Errorf("read first stat: %w", err)
+	}
+
+	twoDir := filepath.Join(crawlDir, "2")
+	result.Two, err = f.readStat(ctx, twoDir)
+	if err != nil {
+		return crawl.Result{}, fmt.Errorf("read second stat: %w", err)
+	}
+
+	threeDir := filepath.Join(crawlDir, "3")
+	result.Three, err = f.readStat(ctx, threeDir)
+	if err != nil {
+		return crawl.Result{}, fmt.Errorf("save third stat: %w", err)
+	}
+
+	interestingFile := filepath.Join(crawlDir, "interesting.txt")
+	result.SomethingInteresting, err = f.fileExists(ctx, interestingFile)
+	if err != nil {
+		return crawl.Result{}, fmt.Errorf("check interesting file exists: %w", err)
+	}
+
+	return result, nil
+}
+
+func (f *fileSystemCrawlStorage) readStat(ctx context.Context, statDir string) (page.Stat, error) {
+	var (
+		stat = page.Stat{}
+		err  error
+	)
+
+	htmlFile := filepath.Join(statDir, "page.html")
+	stat.HTML, err = f.readFile(ctx, htmlFile)
+	if err != nil {
+		return page.Stat{}, fmt.Errorf("read html file: %w", err)
+	}
+
+	networkFile := filepath.Join(statDir, "network.txt")
+	stat.Network, err = f.readFile(ctx, networkFile)
+	if err != nil {
+		return page.Stat{}, fmt.Errorf("read network file: %w", err)
+	}
+
+	screenshotFile := filepath.Join(statDir, "screenshot.png")
+	stat.Screenshot, err = f.readFile(ctx, screenshotFile)
+	if err != nil {
+		return page.Stat{}, fmt.Errorf("read screenshot file: %w", err)
+	}
+
+	captchaFile := filepath.Join(statDir, "captcha.png")
+	stat.Captcha.Image, err = f.readFile(ctx, captchaFile)
+	if err != nil {
+		return page.Stat{}, fmt.Errorf("read screenshot file: %w", err)
+	}
+
+	stat.Captcha.Presented = stat.Captcha.Image != nil
+
+	return stat, nil
+}
+
+func (f *fileSystemCrawlStorage) readFile(_ context.Context, filePath string) ([]byte, error) {
+	fd, err := os.Open(filePath)
+	if errors.Is(err, os.ErrNotExist) {
+		return []byte{}, nil
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("open file: %w", err)
+	}
+
+	defer f.logger.CloseWithLog(fd)
+
+	fileBytes, err := io.ReadAll(fd)
+	if err != nil {
+		return nil, fmt.Errorf("open file: %w", err)
+	}
+
+	return fileBytes, nil
+}
+
+func (f *fileSystemCrawlStorage) fileExists(_ context.Context, filePath string) (bool, error) {
+	_, err := os.Stat(filePath)
+
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+
+	if err != nil {
+		return false, fmt.Errorf("stat file: %w", err)
+	}
+
+	return true, nil
 }

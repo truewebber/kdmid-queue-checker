@@ -10,6 +10,7 @@ import (
 type Result struct {
 	One, Two, Three      page.Stat
 	RanAt                time.Time
+	Err                  error
 	SomethingInteresting bool
 }
 

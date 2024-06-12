@@ -2,9 +2,13 @@ package port
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
+	"strconv"
+	"time"
 
 	"kdmid-queue-checker/app"
 	"kdmid-queue-checker/domain/log"
@@ -35,9 +39,30 @@ func (s *HTTPServer) configureRouter() *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", s.openIndexPage)
+	mux.HandleFunc("/user/{userID}/{date}", s.openCrawlListPage)
 
 	return mux
 }
+
+const head = "<head><title>kdmid bot artifact viewer</title>" +
+	"<style>" +
+	"h2 {padding: 25px 0}" +
+	"* {margin:0;padding:0;}" +
+	".main {width: 80%; margin:0 auto; background-color: white;}" +
+	".crawls_block {}" +
+	".crawl { margin: 15px 0; padding: 15px; border-radius: 3px; }" +
+	".crawl_general { background-color: #99ccff; }" +
+	".crawl_error { background-color: #ff9999; }" +
+	".crawl_interesting { background-color: #99ffcc; }" +
+	".user { padding: 10px 0; }" +
+	".screenshot { width: 300px; padding: 0 5px; }" +
+	".captcha { width: 100px; padding: 0 5px; }" +
+	".hr { margin: 0 0 10px 0; border-bottom: 2px solid #555 }" +
+	"a { color: blue; text-decoration: none; }" +
+	"a:visited { color: blue; }" +
+	"a:hover { color: orange; }" +
+	"</style>" +
+	"</head>"
 
 func (s *HTTPServer) openIndexPage(w http.ResponseWriter, r *http.Request) {
 	users, err := s.app.Query.ListUsers.Handle(r.Context())
@@ -47,10 +72,12 @@ func (s *HTTPServer) openIndexPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	html := "<!doctype html><html><head><title>kdmid bot artifact viewer</title></head><body>" +
+	date := time.Now()
+
+	html := "<!doctype html><html>" + head + "<body>" +
+		"<div class=\"main\">" +
 		"<h2>kdmid bot artifact viewer</h2>" +
-		"<p>choose which user to browse</p>" +
-		"<ul>"
+		"<p style=\"text-decoration: underline\">choose which user to browse</p>"
 
 	for _, user := range users {
 		active := "deactivated"
@@ -64,15 +91,95 @@ func (s *HTTPServer) openIndexPage(w http.ResponseWriter, r *http.Request) {
 		}
 
 		html += fmt.Sprintf(
-			"<li><a href=\"/user/%d\">%d</a> | %s | %s</li>",
+			"<p class=\"user\"><a href=\"/user/%d/%s\">%d</a> | %s | %s</p>",
 			user.TelegramID,
+			date.Format(time.DateOnly),
 			user.TelegramID,
 			active,
 			crawls,
 		)
 	}
 
-	html += "</ul></body></html>"
+	html += "</div></body></html>"
+
+	s.responseHTML(html, w)
+}
+
+const (
+	decimal   = 10
+	sixtyFour = 64
+)
+
+func (s *HTTPServer) openCrawlListPage(w http.ResponseWriter, r *http.Request) {
+	userIDVal := r.PathValue("userID")
+	userID, err := strconv.ParseInt(userIDVal, decimal, sixtyFour)
+	if err != nil {
+		s.responseError(http.StatusBadRequest, err, w)
+
+		return
+	}
+
+	dateVal := r.PathValue("date")
+	date, err := time.Parse(time.DateOnly, dateVal)
+	if err != nil {
+		s.responseError(http.StatusBadRequest, err, w)
+
+		return
+	}
+
+	crawls, err := s.app.Query.ListCrawls.Handle(r.Context(), userID, date)
+	if err != nil {
+		s.responseError(http.StatusInternalServerError, err, w)
+
+		return
+	}
+
+	pastVal := date.AddDate(0, 0, -1).Format(time.DateOnly)
+	futureVal := date.AddDate(0, 0, 1).Format(time.DateOnly)
+
+	html := "<!doctype html><html>" + head +
+		"<body>" +
+		"<div class=\"main\">" +
+		"<h2>kdmid bot artifact viewer</h2>" +
+		"<p>User \"" + userIDVal + "\" | Date: " + dateVal +
+		" | <a href=\"/user/" + userIDVal + "/" + pastVal + "\">Past</a>" +
+		" | <a href=\"/user/" + userIDVal + "/" + futureVal + "\">Future</a></p>" +
+		"<p><a href=\"/\">Back</a></p>" +
+		"<div class=\"crawls_block\">"
+
+	sort.SliceStable(crawls, func(i, j int) bool {
+		return crawls[i].CrawledAt.After(crawls[j].CrawledAt)
+	})
+
+	for _, c := range crawls {
+		class := "crawl_general"
+		text := ""
+
+		switch {
+		case c.Err != nil:
+			class = "crawl_error"
+			text = c.Err.Error()
+		case c.SomethingInteresting:
+			class = "crawl_interesting"
+			text = "Success?"
+		}
+
+		html += "<div class=\"crawl " + class + "\">" +
+			"<p>" + c.CrawledAt.Format(time.TimeOnly) + text + "</p>" +
+			"<p class=\"hr\"></p>"
+
+		for i := range c.Screenshots {
+			html += "<img class=\"screenshot\" src=\"data:image/png;base64," +
+				base64.StdEncoding.EncodeToString(c.Screenshots[i]) + "\">"
+		}
+
+		html += "<img class=\"captcha\" src=\"data:image/png;base64," +
+			base64.StdEncoding.EncodeToString(c.Captch) + "\">"
+
+		html += "</div>"
+	}
+
+	html += "</div></div></body></html>"
 
 	s.responseHTML(html, w)
 }

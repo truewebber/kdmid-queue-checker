@@ -172,15 +172,13 @@ func (c *CheckSlot) runSingleCheck(
 
 	crawlResult, crawlErr := c.crawl(recipient.ID, recipient.CD)
 	if crawlErr != nil {
-		if notifyErr := c.notify(ctx, crawlResult, crawlErr, recipient); notifyErr != nil {
-			return fmt.Errorf("notify failed: %w: crawl failed: %w", notifyErr, crawlErr)
-		}
-
 		return fmt.Errorf("crawl failed: %w", crawlErr)
 	}
 
 	if saveErr := c.crawlStorage.Save(ctx, recipient.TelegramID, crawlResult); saveErr != nil {
-		if notifyErr := c.notify(ctx, crawlResult, saveErr, recipient); notifyErr != nil {
+		crawlResult.Err = fmt.Errorf("%w, save failed: %w", crawlResult.Err, saveErr)
+
+		if notifyErr := c.notify(ctx, crawlResult, recipient); notifyErr != nil {
 			return fmt.Errorf("notify failed: %w: save crawl failed: %w", notifyErr, saveErr)
 		}
 
@@ -188,7 +186,7 @@ func (c *CheckSlot) runSingleCheck(
 	}
 
 	if crawlResult.SomethingInteresting {
-		if notifyErr := c.notify(ctx, crawlResult, nil, recipient); notifyErr != nil {
+		if notifyErr := c.notify(ctx, crawlResult, recipient); notifyErr != nil {
 			return fmt.Errorf("notify failed: %w", notifyErr)
 		}
 	}
@@ -201,10 +199,9 @@ func (c *CheckSlot) runSingleCheck(
 func (c *CheckSlot) notify(
 	ctx context.Context,
 	result *crawl.Result,
-	crawlErr error,
 	recipient *notification.Recipient,
 ) error {
-	n := c.buildNotification(result, crawlErr)
+	n := c.buildNotification(result)
 
 	if err := c.notifier.Notify(ctx, n, recipient); err != nil {
 		c.logger.Error("notify failed", "err", err)
@@ -213,11 +210,11 @@ func (c *CheckSlot) notify(
 	return nil
 }
 
-func (c *CheckSlot) buildNotification(result *crawl.Result, err error) *notification.Notification {
+func (c *CheckSlot) buildNotification(result *crawl.Result) *notification.Notification {
 	return &notification.Notification{
 		Images:               c.buildNotificationImages(result),
 		CrawledAt:            result.RanAt,
-		Error:                err,
+		Error:                result.Err,
 		SomethingInteresting: result.SomethingInteresting,
 	}
 }
@@ -252,22 +249,30 @@ func (c *CheckSlot) crawl(applicationID, applicationCD string) (*crawl.Result, e
 
 	crawlResult.One, err = navigator.OpenPageToAuthorize()
 	if err != nil {
-		return crawlResult, fmt.Errorf("open page to authorize: %w", err)
+		crawlResult.Err = fmt.Errorf("open page to authorize: %w", err)
+
+		return crawlResult, nil
 	}
 
 	code, err := c.solver.Solve(crawlResult.One.Captcha.Image)
 	if err != nil {
-		return crawlResult, fmt.Errorf("solve captcha: %w", err)
+		crawlResult.Err = fmt.Errorf("solve captcha: %w", err)
+
+		return crawlResult, nil
 	}
 
 	crawlResult.Two, err = navigator.SubmitAuthorization(code)
 	if err != nil {
-		return crawlResult, fmt.Errorf("submit authorization: %w", err)
+		crawlResult.Err = fmt.Errorf("submit authorization: %w", err)
+
+		return crawlResult, nil
 	}
 
 	crawlResult.Three, err = navigator.OpenSlotBookingPage()
 	if err != nil {
-		return crawlResult, fmt.Errorf("open slot booking page: %w", err)
+		crawlResult.Err = fmt.Errorf("open slot booking page: %w", err)
+
+		return crawlResult, nil
 	}
 
 	crawlResult.SomethingInteresting = crawlResult.One.SomethingInteresting ||
