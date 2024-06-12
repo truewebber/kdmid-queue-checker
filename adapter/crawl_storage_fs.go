@@ -67,6 +67,13 @@ func (f *fileSystemCrawlStorage) Save(_ context.Context, userID int64, result *c
 		return fmt.Errorf("save third stat: %w", err)
 	}
 
+	if result.Err != nil {
+		errFile := filepath.Join(crawlDir, "error.txt")
+		if err := f.saveFile(errFile, []byte(result.Err.Error())); err != nil {
+			return fmt.Errorf("save error file: %w", err)
+		}
+	}
+
 	if result.SomethingInteresting {
 		interestingFile := filepath.Join(crawlDir, "interesting.txt")
 		if err := f.saveFile(interestingFile, []byte{}); err != nil {
@@ -207,6 +214,16 @@ func (f *fileSystemCrawlStorage) readCrawl(ctx context.Context, crawlDir string)
 	result.Three, err = f.readStat(ctx, threeDir)
 	if err != nil {
 		return crawl.Result{}, fmt.Errorf("save third stat: %w", err)
+	}
+
+	errorFile := filepath.Join(crawlDir, "error.txt")
+	errText, err := f.readFile(ctx, errorFile)
+	if err != nil {
+		return crawl.Result{}, fmt.Errorf("read error file: %w", err)
+	}
+
+	if len(errText) > 0 {
+		result.Err = fmt.Errorf(string(errText))
 	}
 
 	interestingFile := filepath.Join(crawlDir, "interesting.txt")
