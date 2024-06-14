@@ -176,16 +176,12 @@ func (c *CheckSlot) runSingleCheck(
 	}
 
 	if saveErr := c.crawlStorage.Save(ctx, recipient.TelegramID, crawlResult); saveErr != nil {
-		crawlResult.Err = fmt.Errorf("%w, save failed: %w", crawlResult.Err, saveErr)
+		crawlResult.Err = fmt.Errorf("%w, save crawl result: %w", crawlResult.Err, saveErr)
 
-		if notifyErr := c.notify(ctx, crawlResult, recipient); notifyErr != nil {
-			return fmt.Errorf("notify failed: %w: save crawl failed: %w", notifyErr, saveErr)
-		}
-
-		return fmt.Errorf("save crawl result: %w", saveErr)
+		c.logger.Error("save crawl result", "recipient", recipient, "err", saveErr)
 	}
 
-	if crawlResult.SomethingInteresting {
+	if crawlResult.SomethingInteresting || crawlResult.Err != nil {
 		if notifyErr := c.notify(ctx, crawlResult, recipient); notifyErr != nil {
 			return fmt.Errorf("notify failed: %w", notifyErr)
 		}
