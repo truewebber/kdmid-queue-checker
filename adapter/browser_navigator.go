@@ -13,12 +13,12 @@ import (
 	"kdmid-queue-checker/domain/page"
 )
 
-type chromeNavigator struct {
+type browserNavigator struct {
 	ctx    playwright.BrowserContext
 	id, cd string
 }
 
-func (c *chromeNavigator) buildURL() *url.URL {
+func (c *browserNavigator) buildURL() *url.URL {
 	query := url.Values{}
 	query.Set("id", c.id)
 	query.Set("cd", c.cd)
@@ -31,7 +31,7 @@ func (c *chromeNavigator) buildURL() *url.URL {
 	}
 }
 
-func (c *chromeNavigator) OpenPageToAuthorize() (page.Stat, error) {
+func (c *browserNavigator) OpenPageToAuthorize() (page.Stat, error) {
 	if len(c.ctx.Pages()) != 0 {
 		return page.Stat{}, fmt.Errorf("there're pages in context")
 	}
@@ -49,12 +49,7 @@ func (c *chromeNavigator) OpenPageToAuthorize() (page.Stat, error) {
 	browserPage.On("response", networkBuffer.onResponse)
 	defer browserPage.RemoveListener("response", networkBuffer.onResponse)
 
-	response, err := browserPage.Goto(c.buildURL().String(), playwright.PageGotoOptions{
-		WaitUntil: playwright.WaitUntilStateDomcontentloaded,
-	})
-	if err != nil {
-		return page.Stat{}, fmt.Errorf("could not goto: %w", err)
-	}
+	openPageErr := c.openPage(browserPage, c.buildURL())
 
 	pageHtml, err := browserPage.Content()
 	if err != nil {
@@ -71,6 +66,14 @@ func (c *chromeNavigator) OpenPageToAuthorize() (page.Stat, error) {
 			Network: networkBuffer.Bytes(),
 			HTML:    []byte(pageHtml),
 		}, fmt.Errorf("could not take image: %w", err)
+	}
+
+	if openPageErr != nil {
+		return page.Stat{
+			Network:    networkBuffer.Bytes(),
+			HTML:       []byte(pageHtml),
+			Screenshot: pageScreenshot,
+		}, fmt.Errorf("could not goto: %w", openPageErr)
 	}
 
 	captchaScreenshot, err := c.takeCaptchaScreenshot(browserPage)
@@ -92,14 +95,10 @@ func (c *chromeNavigator) OpenPageToAuthorize() (page.Stat, error) {
 		},
 	}
 
-	if !response.Ok() {
-		return stat, fmt.Errorf("non-ok response: %v", response.Status())
-	}
-
 	return stat, nil
 }
 
-func (c *chromeNavigator) takeCaptchaScreenshot(browserPage playwright.Page) (image.PNG, error) {
+func (c *browserNavigator) takeCaptchaScreenshot(browserPage playwright.Page) (image.PNG, error) {
 	locator := browserPage.Locator("img")
 
 	n, err := locator.Count()
@@ -132,7 +131,7 @@ func (c *chromeNavigator) takeCaptchaScreenshot(browserPage playwright.Page) (im
 	return croppedScreenshot, nil
 }
 
-func (c *chromeNavigator) SubmitAuthorization(code string) (page.Stat, error) {
+func (c *browserNavigator) SubmitAuthorization(code string) (page.Stat, error) {
 	pagesCount := len(c.ctx.Pages())
 	if pagesCount != 1 {
 		return page.Stat{}, fmt.Errorf("expected 1 page, got %d", pagesCount)
@@ -201,7 +200,7 @@ func (c *chromeNavigator) SubmitAuthorization(code string) (page.Stat, error) {
 	}, nil
 }
 
-func (c *chromeNavigator) getInputForCaptcha(page playwright.Page) (playwright.Locator, error) {
+func (c *browserNavigator) getInputForCaptcha(page playwright.Page) (playwright.Locator, error) {
 	inputLocator := page.Locator("div.inp > input")
 
 	n, err := inputLocator.Count()
@@ -216,7 +215,7 @@ func (c *chromeNavigator) getInputForCaptcha(page playwright.Page) (playwright.L
 	return inputLocator.Nth(2), nil
 }
 
-func (c *chromeNavigator) getSubmitButton(page playwright.Page) (playwright.Locator, error) {
+func (c *browserNavigator) getSubmitButton(page playwright.Page) (playwright.Locator, error) {
 	inputLocator := page.Locator("input[type=submit]")
 
 	n, err := inputLocator.Count()
@@ -231,7 +230,7 @@ func (c *chromeNavigator) getSubmitButton(page playwright.Page) (playwright.Loca
 	return inputLocator, nil
 }
 
-func (c *chromeNavigator) OpenSlotBookingPage() (page.Stat, error) {
+func (c *browserNavigator) OpenSlotBookingPage() (page.Stat, error) {
 	pagesCount := len(c.ctx.Pages())
 	if pagesCount != 1 {
 		return page.Stat{}, fmt.Errorf("expected 1 page, got %d", pagesCount)
@@ -301,7 +300,7 @@ func (c *chromeNavigator) OpenSlotBookingPage() (page.Stat, error) {
 	}, nil
 }
 
-func (c *chromeNavigator) isSomethingInteresting(browserPage playwright.Page) (bool, error) {
+func (c *browserNavigator) isSomethingInteresting(browserPage playwright.Page) (bool, error) {
 	button := browserPage.Locator("input[type=submit]")
 	n, err := button.Count()
 	if err != nil {
@@ -334,7 +333,7 @@ func (c *chromeNavigator) isSomethingInteresting(browserPage playwright.Page) (b
 	return false, nil
 }
 
-func (c *chromeNavigator) getInputTypeImage(page playwright.Page) (playwright.Locator, error) {
+func (c *browserNavigator) getInputTypeImage(page playwright.Page) (playwright.Locator, error) {
 	inputLocator := page.Locator("input[type=image]")
 
 	n, err := inputLocator.Count()
@@ -349,9 +348,28 @@ func (c *chromeNavigator) getInputTypeImage(page playwright.Page) (playwright.Lo
 	return inputLocator, nil
 }
 
-func (c *chromeNavigator) Close() error {
+func (c *browserNavigator) openPage(page playwright.Page, urlToOpen *url.URL) error {
+	_, err := page.Goto(urlToOpen.String(), playwright.PageGotoOptions{
+		WaitUntil: playwright.WaitUntilStateDomcontentloaded,
+	})
+	if err != nil {
+		return fmt.Errorf("could not goto: %w", err)
+	}
+
+	locator := page.Locator("form[name=\"aspnetForm\"]")
+
+	if err := locator.WaitFor(playwright.LocatorWaitForOptions{
+		State: playwright.WaitForSelectorStateAttached,
+	}); err != nil {
+		return fmt.Errorf("wait for form presented: %w", err)
+	}
+
+	return nil
+}
+
+func (c *browserNavigator) Close() error {
 	if err := c.ctx.Close(); err != nil {
-		return fmt.Errorf("close chrome context: %w", err)
+		return fmt.Errorf("close browser context: %w", err)
 	}
 
 	return nil
@@ -362,7 +380,8 @@ type bytesBuffer struct {
 }
 
 func (b *bytesBuffer) onRequest(request playwright.Request) {
-	logEntry := "Request: " + request.URL() + "\n"
+	logEntry := fmt.Sprintf("Request: %v, headers: %v\n", request.URL(), request.Headers())
+
 	_, err := b.WriteString(logEntry)
 	if err != nil {
 		log.Printf("could not write to log file: %v", err)

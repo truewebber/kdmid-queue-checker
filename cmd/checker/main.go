@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
@@ -29,14 +30,9 @@ func main() {
 }
 
 func run(ctx context.Context, cfg *config, logger log.Logger) error {
-	appConfig := &service.Config{
-		TwoCaptchaAPIKey:   cfg.TwoCaptcha.APIKey,
-		ArtifactsDirectory: cfg.ArtifactsDirectory,
-		TelegramBotToken:   cfg.TelegramBotToken,
-		RecipientStorage: service.RecipientStorage{
-			Directory: cfg.RecipientStorage.Directory,
-			Limit:     cfg.RecipientStorage.Limit,
-		},
+	appConfig, err := buildAppConfig(cfg)
+	if err != nil {
+		return fmt.Errorf("build app config: %w", err)
 	}
 
 	app := service.NewApplication(appConfig, logger)
@@ -76,6 +72,24 @@ func run(ctx context.Context, cfg *config, logger log.Logger) error {
 	}
 
 	return nil
+}
+
+func buildAppConfig(cfg *config) (*service.Config, error) {
+	proxyURL, err := url.Parse(cfg.ProxyURL)
+	if err != nil {
+		return nil, fmt.Errorf("parse proxy url: %w", err)
+	}
+
+	return &service.Config{
+		TwoCaptchaAPIKey:   cfg.TwoCaptcha.APIKey,
+		ArtifactsDirectory: cfg.ArtifactsDirectory,
+		TelegramBotToken:   cfg.TelegramBotToken,
+		RecipientStorage: service.RecipientStorage{
+			Directory: cfg.RecipientStorage.Directory,
+			Limit:     cfg.RecipientStorage.Limit,
+		},
+		ProxyURL: proxyURL,
+	}, nil
 }
 
 func contextClosableOnSignals(sig ...os.Signal) context.Context {

@@ -1,6 +1,8 @@
 package service
 
 import (
+	"net/url"
+
 	"kdmid-queue-checker/adapter"
 	"kdmid-queue-checker/app"
 	"kdmid-queue-checker/app/daemon"
@@ -9,7 +11,7 @@ import (
 )
 
 func NewApplication(cfg *Config, logger log.Logger) *app.Application {
-	dispatcher := adapter.MustNewChromeDispatcher()
+	dispatcher := adapter.MustNewBrowserDispatcher(cfg.ProxyURL)
 	solver := adapter.NewTwoCaptchaSolver(cfg.TwoCaptchaAPIKey)
 	crawlStorage := adapter.MustNewFileSystemCrawlStorage(cfg.ArtifactsDirectory, logger)
 	recipientStorage := adapter.MustNewRecipientStorageFs(
@@ -37,6 +39,7 @@ type Config struct {
 	ArtifactsDirectory string
 	TelegramBotToken   string
 	RecipientStorage   RecipientStorage
+	ProxyURL           *url.URL
 }
 
 type RecipientStorage struct {
