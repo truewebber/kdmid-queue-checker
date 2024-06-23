@@ -32,10 +32,6 @@ func NewBrowserDispatcher(proxyURL *url.URL) (BrowserDispatcher, error) {
 	}
 
 	browser, err := pw.WebKit.Launch(playwright.BrowserTypeLaunchOptions{
-		Args: []string{
-			"--no-sandbox", "--disable-setuid-sandbox", "--disable-infobars", "--disable-logging",
-			"--disable-login-animations", "--disable-notifications", "--disable-gpu",
-		},
 		Headless: playwright.Bool(true),
 		Proxy:    proxy,
 	})
