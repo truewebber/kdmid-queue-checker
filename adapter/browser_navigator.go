@@ -3,11 +3,10 @@ package adapter
 import (
 	"bytes"
 	"fmt"
+	"github.com/playwright-community/playwright-go"
 	"log"
 	"net/url"
 	"strings"
-
-	"github.com/playwright-community/playwright-go"
 
 	"kdmid-queue-checker/domain/image"
 	"kdmid-queue-checker/domain/page"
@@ -30,8 +29,6 @@ func (c *browserNavigator) buildURL() *url.URL {
 		RawQuery: query.Encode(),
 	}
 }
-
-const timeout float64 = 120
 
 func (c *browserNavigator) OpenPageToAuthorize() (page.Stat, error) {
 	if len(c.ctx.Pages()) != 0 {
@@ -169,11 +166,8 @@ func (c *browserNavigator) SubmitAuthorization(code string) (page.Stat, error) {
 		}, fmt.Errorf("could not click submit button: %w", err)
 	}
 
-	timeoutVar := timeout
-
 	err = browserPage.WaitForURL("https://barcelona.kdmid.ru/queue/OrderInfo.aspx*", playwright.PageWaitForURLOptions{
 		WaitUntil: playwright.WaitUntilStateLoad,
-		Timeout:   &timeoutVar,
 	})
 	if err != nil {
 		return page.Stat{
@@ -262,11 +256,8 @@ func (c *browserNavigator) OpenSlotBookingPage() (page.Stat, error) {
 		}, fmt.Errorf("could not click button: %w", err)
 	}
 
-	timeoutVar := timeout
-
 	err = browserPage.WaitForURL("https://barcelona.kdmid.ru/queue/SPCalendar.aspx*", playwright.PageWaitForURLOptions{
 		WaitUntil: playwright.WaitUntilStateLoad,
-		Timeout:   &timeoutVar,
 	})
 	if err != nil {
 		return page.Stat{
@@ -357,11 +348,8 @@ func (c *browserNavigator) getInputTypeImage(page playwright.Page) (playwright.L
 }
 
 func (c *browserNavigator) openAuthorizationPage(page playwright.Page, urlToOpen *url.URL) error {
-	timeoutVar := timeout
-
 	_, err := page.Goto(urlToOpen.String(), playwright.PageGotoOptions{
 		WaitUntil: playwright.WaitUntilStateDomcontentloaded,
-		Timeout:   &timeoutVar,
 	})
 	if err != nil {
 		return fmt.Errorf("could not goto: %w", err)
