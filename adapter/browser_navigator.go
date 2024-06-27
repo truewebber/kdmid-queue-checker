@@ -31,6 +31,8 @@ func (c *browserNavigator) buildURL() *url.URL {
 	}
 }
 
+const timeout float64 = 120
+
 func (c *browserNavigator) OpenPageToAuthorize() (page.Stat, error) {
 	if len(c.ctx.Pages()) != 0 {
 		return page.Stat{}, fmt.Errorf("there're pages in context")
@@ -49,7 +51,7 @@ func (c *browserNavigator) OpenPageToAuthorize() (page.Stat, error) {
 	browserPage.On("response", networkBuffer.onResponse)
 	defer browserPage.RemoveListener("response", networkBuffer.onResponse)
 
-	openPageErr := c.openPage(browserPage, c.buildURL())
+	openPageErr := c.openAuthorizationPage(browserPage, c.buildURL())
 
 	pageHtml, err := browserPage.Content()
 	if err != nil {
@@ -167,8 +169,11 @@ func (c *browserNavigator) SubmitAuthorization(code string) (page.Stat, error) {
 		}, fmt.Errorf("could not click submit button: %w", err)
 	}
 
+	timeoutVar := timeout
+
 	err = browserPage.WaitForURL("https://barcelona.kdmid.ru/queue/OrderInfo.aspx*", playwright.PageWaitForURLOptions{
 		WaitUntil: playwright.WaitUntilStateLoad,
+		Timeout:   &timeoutVar,
 	})
 	if err != nil {
 		return page.Stat{
@@ -257,8 +262,11 @@ func (c *browserNavigator) OpenSlotBookingPage() (page.Stat, error) {
 		}, fmt.Errorf("could not click button: %w", err)
 	}
 
+	timeoutVar := timeout
+
 	err = browserPage.WaitForURL("https://barcelona.kdmid.ru/queue/SPCalendar.aspx*", playwright.PageWaitForURLOptions{
 		WaitUntil: playwright.WaitUntilStateLoad,
+		Timeout:   &timeoutVar,
 	})
 	if err != nil {
 		return page.Stat{
@@ -348,9 +356,12 @@ func (c *browserNavigator) getInputTypeImage(page playwright.Page) (playwright.L
 	return inputLocator, nil
 }
 
-func (c *browserNavigator) openPage(page playwright.Page, urlToOpen *url.URL) error {
+func (c *browserNavigator) openAuthorizationPage(page playwright.Page, urlToOpen *url.URL) error {
+	timeoutVar := timeout
+
 	_, err := page.Goto(urlToOpen.String(), playwright.PageGotoOptions{
 		WaitUntil: playwright.WaitUntilStateDomcontentloaded,
+		Timeout:   &timeoutVar,
 	})
 	if err != nil {
 		return fmt.Errorf("could not goto: %w", err)
