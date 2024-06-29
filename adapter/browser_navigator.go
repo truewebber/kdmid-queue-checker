@@ -175,6 +175,12 @@ func (c *browserNavigator) SubmitAuthorization(code string) (page.Stat, error) {
 		}, fmt.Errorf("navigation failed: %w", err)
 	}
 
+	if err := c.checkCaptchaSolved(browserPage); err != nil {
+		return page.Stat{
+			Network: networkBuffer.Bytes(),
+		}, fmt.Errorf("check captcha solved: %w", err)
+	}
+
 	pageHtml, err := browserPage.Content()
 	if err != nil {
 		return page.Stat{
@@ -197,6 +203,21 @@ func (c *browserNavigator) SubmitAuthorization(code string) (page.Stat, error) {
 		HTML:       []byte(pageHtml),
 		Screenshot: screenshot,
 	}, nil
+}
+
+func (c *browserNavigator) checkCaptchaSolved(browserPage playwright.Page) error {
+	captchaErrBlock := browserPage.Locator("#center-panel > div:nth-child(11) > span")
+
+	elementsCount, err := captchaErrBlock.Count()
+	if err != nil {
+		return fmt.Errorf("get count captcha error blocks: %w", err)
+	}
+
+	if elementsCount == 0 {
+		return nil
+	}
+
+	return page.ErrCaptchaNotSolved
 }
 
 func (c *browserNavigator) getInputForCaptcha(page playwright.Page) (playwright.Locator, error) {

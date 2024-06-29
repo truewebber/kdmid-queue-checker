@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -232,6 +233,31 @@ func (c *CheckSlot) buildNotificationImages(result *crawl.Result) []notification
 }
 
 func (c *CheckSlot) crawl(applicationID, applicationCD string) (*crawl.Result, error) {
+	i := 0
+
+	for {
+		crawlResult, err := c.crawlWithRetry(applicationID, applicationCD, i)
+		if errors.Is(err, errRetryCrawl) {
+			i++
+
+			c.logger.Info("retry crawl", "idx", i, "err", err)
+
+			continue
+		}
+
+		if err != nil {
+			return nil, fmt.Errorf("crawl failed, retryIdx - %d: %w", i, err)
+		}
+
+		return crawlResult, nil
+	}
+}
+
+var errRetryCrawl = fmt.Errorf("retry crawl")
+
+const maxRetryOnCaptchaNotSolved = 3
+
+func (c *CheckSlot) crawlWithRetry(applicationID, applicationCD string, retryIdx int) (*crawl.Result, error) {
 	navigator, err := c.dispatcher.NewNavigator(applicationID, applicationCD)
 	if err != nil {
 		return nil, fmt.Errorf("new navigator: %w", err)
@@ -258,6 +284,10 @@ func (c *CheckSlot) crawl(applicationID, applicationCD string) (*crawl.Result, e
 	}
 
 	crawlResult.Two, err = navigator.SubmitAuthorization(code)
+	if errors.Is(err, page.ErrCaptchaNotSolved) && retryIdx < maxRetryOnCaptchaNotSolved {
+		return nil, fmt.Errorf("%w: %w", err, errRetryCrawl)
+	}
+
 	if err != nil {
 		crawlResult.Err = fmt.Errorf("submit authorization: %w", err)
 

@@ -1,10 +1,13 @@
 package page
 
 import (
+	"fmt"
 	"io"
 
 	"kdmid-queue-checker/domain/image"
 )
+
+var ErrCaptchaNotSolved = fmt.Errorf("captcha not solved")
 
 type Stat struct {
 	HTML                 []byte

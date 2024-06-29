@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"time"
 
 	"github.com/playwright-community/playwright-go"
 
@@ -89,7 +88,7 @@ func MustNewBrowserDispatcher(proxyURL *url.URL) BrowserDispatcher {
 	return dispatcher
 }
 
-const timeout = float64(120 * time.Millisecond)
+const timeout = float64(120 * 1000)
 
 func (c *browserDispatcher) NewNavigator(id, cd string) (page.Navigator, error) {
 	ctx, err := c.browser.NewContext()
