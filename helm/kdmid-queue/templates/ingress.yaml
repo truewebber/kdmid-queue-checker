@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    repo: "github_com__truewebber__kdmid_queue_checker"
+    app: "kdmid_queue_checker"
+spec:
+  ingressClassName: nginx
+#  tls:
+#    - hosts:
+#        - "kdmidbot.trw.red"
+#      secretName: "secret"
+  rules:
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}
+                port:
+                  number: {{ .Values.port }}
