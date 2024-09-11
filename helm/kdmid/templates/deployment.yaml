@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    repo: "github_com__truewebber__kdmid_queue_checker"
+    app: "kdmid_queue_checker"
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 100%
+      maxUnavailable: 0%
+    type: RollingUpdate
+  replicas: {{ .Values.minReplicaCount }}
+  selector:
+    matchLabels:
+      repo: "github_com__truewebber__kdmid_queue_checker"
+      app: "kdmid_queue_checker"
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ .Values | toJson | sha256sum }}
+      labels:
+        repo: "github_com__truewebber__kdmid_queue_checker"
+        app: "kdmid_queue_checker"
+    spec:
+      imagePullSecrets:
+        - name: dockerconfigjson-github-com
+      containers:
+        - name: checker
+          image: "ghcr.io/truewebber/kdmid-queue-checker:{{ .Chart.AppVersion }}"
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+          env:
+            - name: APP_HOST_PORT
+              value: ":{{ .Values.app.port }}"
+            - name: METRICS_HOST_PORT
+              value: ":{{ .Values.app.metricsPort }}"
+            - name: TWO_CAPTCHA_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}"
+                  key: two_captcha_api_key
+            - name: ARTIFACTS_DIRECTORY
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}"
+                  key: artifacts_directory
+            - name: RECIPIENT_STORAGE_DIRECTORY
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}"
+                  key: recipient_storage_directory
+            - name: RECIPIENT_STORAGE_LIMIT
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}"
+                  key: recipient_storage_limit
+            - name: TELEGRAM_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}"
+                  key: telegram_bot_token
+            - name: PROXY_URL
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}"
+                  key: proxy_url
+          ports:
+            - name: http
+              containerPort: {{ .Values.app.port }}
+              protocol: TCP
+            - name: metrics
+              containerPort: {{ .Values.app.metricsPort }}
+              protocol: TCP
+{{/*          livenessProbe:*/}}
+{{/*            httpGet:*/}}
+{{/*              port: {{ .Values.app.metricsPort }}*/}}
+{{/*              path: /metrics*/}}
+{{/*            initialDelaySeconds: 20*/}}
+{{/*            timeoutSeconds: 15*/}}
+{{/*          readinessProbe:*/}}
+{{/*            httpGet:*/}}
+{{/*              port: {{ .Values.app.metricsPort }}*/}}
+{{/*              path: /metrics*/}}
+{{/*            initialDelaySeconds: 15*/}}
+{{/*            timeoutSeconds: 9*/}}
+          resources:
+            requests:
+              memory: "80Mi"
+              cpu: "75m"
+            limits:
+              memory: "160Mi"
+              cpu: "150m"
+          volumeMounts:
+            - mountPath: "/opt"
+              name: storage
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}

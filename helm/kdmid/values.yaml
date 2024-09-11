@@ -1,0 +1,15 @@
+minReplicaCount: 1
+maxReplicaCount: 3
+targetCPUUtilizationPercentage: 60
+
+app:
+  port: 9999
+  metricsPort: 9998
+  two_captcha_api_key: ""
+  artifacts_directory: ""
+  recipient_storage_directory: ""
+  recipient_storage_limit: 0
+  telegram_bot_token: ""
+  proxy_url: ""
+
+host: kdmidbot.trw.red

@@ -1,5 +1,5 @@
 apiVersion: v2
-name: kdmid-queue
+name: kdmid
 description: Telegram bot for KDMID
 
 # A chart can be either an 'application' or a 'library' chart.

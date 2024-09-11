@@ -13,7 +13,7 @@ spec:
 #        - "kdmidbot.trw.red"
 #      secretName: "secret"
   rules:
-    - host: {{ .host | quote }}
+    - host: {{ .Values.host }}
       http:
         paths:
           - path: /
@@ -22,4 +22,4 @@ spec:
               service:
                 name: {{ .Release.Name }}
                 port:
-                  number: {{ .Values.port }}
+                  number: {{ .Values.app.port }}
