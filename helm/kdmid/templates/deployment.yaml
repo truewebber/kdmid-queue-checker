@@ -95,7 +95,7 @@ spec:
               memory: "160Mi"
               cpu: "150m"
           volumeMounts:
-            - mountPath: "/app/storage"
+            - mountPath: {{ .Values.app.base_directory }}
               name: storage
       volumes:
         - name: storage

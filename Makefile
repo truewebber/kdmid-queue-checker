@@ -19,6 +19,7 @@ upgrade:
 	CHART="$(PACKAGE_DESTINATION)/$$CHART_NAME-$(PACKAGE_VERSION).tgz" && \
 	helm upgrade --install $(RELEASE_NAME) $$CHART \
 	--set-string app.two_captcha_api_key=$(TWO_CAPTCHA_API_KEY) \
+	--set-string app.base_directory=$(BASE_DIRECTORY) \
 	--set-string app.artifacts_directory=$(ARTIFACTS_DIRECTORY) \
 	--set-string app.recipient_storage_directory=$(RECIPIENT_STORAGE_DIRECTORY) \
 	--set-string app.recipient_storage_limit=$(RECIPIENT_STORAGE_LIMIT) \

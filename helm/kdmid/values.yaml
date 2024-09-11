@@ -6,6 +6,7 @@ app:
   port: 9999
   metricsPort: 9998
   two_captcha_api_key: ""
+  base_directory: ""
   artifacts_directory: ""
   recipient_storage_directory: ""
   recipient_storage_limit: 0
