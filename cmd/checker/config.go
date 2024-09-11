@@ -17,6 +17,7 @@ type config struct {
 	}
 	TelegramBotToken string `env:"TELEGRAM_BOT_TOKEN,required=true"`
 	AppHostPort      string `env:"APP_HOST_PORT,required=true"`
+	MetricsHostPort  string `env:"METRICS_HOST_PORT,required=true"`
 	ProxyURL         string `env:"PROXY_URL,required=true"`
 }
 

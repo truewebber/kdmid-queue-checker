@@ -3,11 +3,12 @@ package service
 import (
 	"net/url"
 
+	"github.com/truewebber/gopkg/log"
+
 	"kdmid-queue-checker/adapter"
 	"kdmid-queue-checker/app"
 	"kdmid-queue-checker/app/daemon"
 	"kdmid-queue-checker/app/query"
-	"kdmid-queue-checker/domain/log"
 )
 
 func NewApplication(cfg *Config, logger log.Logger) *app.Application {

@@ -9,7 +9,8 @@ import (
 	"path"
 	"sync"
 
-	"kdmid-queue-checker/domain/log"
+	"github.com/truewebber/gopkg/log"
+
 	"kdmid-queue-checker/domain/notification"
 )
 
@@ -128,7 +129,11 @@ func (r *recipientStorageFs) deleteRecipientIfPresented(domainRecipient notifica
 func (r *recipientStorageFs) writeCache() error {
 	f, err := os.Create(r.storageFile)
 
-	defer r.logger.CloseWithLog(f)
+	defer func() {
+		if err := f.Close(); err != nil {
+			r.logger.Error("failed close", "error", err.Error())
+		}
+	}()
 
 	if err != nil {
 		return fmt.Errorf("failed to open file: %w", err)
@@ -152,7 +157,11 @@ func (r *recipientStorageFs) readAllToCache() error {
 		return errNoFileExists
 	}
 
-	defer r.logger.CloseWithLog(f)
+	defer func() {
+		if err := f.Close(); err != nil {
+			r.logger.Error("failed close", "error", err.Error())
+		}
+	}()
 
 	if err != nil {
 		return fmt.Errorf("failed to open file: %w", err)
@@ -174,7 +183,11 @@ func (r *recipientStorageFs) readAllToCache() error {
 func (r *recipientStorageFs) createStorage() error {
 	f, err := os.Create(r.storageFile)
 
-	defer r.logger.CloseWithLog(f)
+	defer func() {
+		if err := f.Close(); err != nil {
+			r.logger.Error("failed close", "error", err.Error())
+		}
+	}()
 
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)

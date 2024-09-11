@@ -60,7 +60,7 @@ func (n *telegramNotifier) Notify(
 		}
 	}
 
-	text := []string{}
+	text := make([]string, 0)
 
 	if notification.Error != nil {
 		text = append(text, "Error occurred during checking.")

@@ -75,18 +75,18 @@ spec:
             - name: metrics
               containerPort: {{ .Values.app.metricsPort }}
               protocol: TCP
-{{/*          livenessProbe:*/}}
-{{/*            httpGet:*/}}
-{{/*              port: {{ .Values.app.metricsPort }}*/}}
-{{/*              path: /metrics*/}}
-{{/*            initialDelaySeconds: 20*/}}
-{{/*            timeoutSeconds: 15*/}}
-{{/*          readinessProbe:*/}}
-{{/*            httpGet:*/}}
-{{/*              port: {{ .Values.app.metricsPort }}*/}}
-{{/*              path: /metrics*/}}
-{{/*            initialDelaySeconds: 15*/}}
-{{/*            timeoutSeconds: 9*/}}
+          livenessProbe:
+            httpGet:
+              port: {{ .Values.app.metricsPort }}
+              path: /metrics
+            initialDelaySeconds: 20
+            timeoutSeconds: 15
+          readinessProbe:
+            httpGet:
+              port: {{ .Values.app.metricsPort }}
+              path: /metrics
+            initialDelaySeconds: 15
+            timeoutSeconds: 9
           resources:
             requests:
               memory: "80Mi"
@@ -95,7 +95,7 @@ spec:
               memory: "160Mi"
               cpu: "150m"
           volumeMounts:
-            - mountPath: "/opt"
+            - mountPath: "/app/storage"
               name: storage
       volumes:
         - name: storage

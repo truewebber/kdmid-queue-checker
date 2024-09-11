@@ -10,8 +10,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/truewebber/gopkg/log"
+
 	"kdmid-queue-checker/domain/crawl"
-	"kdmid-queue-checker/domain/log"
 	"kdmid-queue-checker/domain/page"
 )
 
@@ -120,7 +121,11 @@ func (f *fileSystemCrawlStorage) saveFile(filePath string, fileBytes []byte) err
 		return fmt.Errorf("create file: %w", err)
 	}
 
-	defer f.logger.CloseWithLog(fd)
+	defer func() {
+		if err := fd.Close(); err != nil {
+			f.logger.Error("failed close", "error", err.Error())
+		}
+	}()
 
 	if _, err := fd.Write(fileBytes); err != nil {
 		return fmt.Errorf("write file: %w", err)
@@ -280,7 +285,11 @@ func (f *fileSystemCrawlStorage) readFile(_ context.Context, filePath string) ([
 		return nil, fmt.Errorf("open file: %w", err)
 	}
 
-	defer f.logger.CloseWithLog(fd)
+	defer func() {
+		if err := fd.Close(); err != nil {
+			f.logger.Error("failed close", "error", err.Error())
+		}
+	}()
 
 	fileBytes, err := io.ReadAll(fd)
 	if err != nil {

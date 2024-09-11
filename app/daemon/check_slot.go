@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/robfig/cron/v3"
+	"github.com/truewebber/gopkg/log"
 
 	"kdmid-queue-checker/domain/captcha"
 	"kdmid-queue-checker/domain/crawl"
-	"kdmid-queue-checker/domain/log"
 	"kdmid-queue-checker/domain/notification"
 	"kdmid-queue-checker/domain/page"
 )
@@ -263,7 +263,11 @@ func (c *CheckSlot) crawlWithRetry(applicationID, applicationCD string, retryIdx
 		return nil, fmt.Errorf("new navigator: %w", err)
 	}
 
-	defer c.logger.CloseWithLog(navigator)
+	defer func() {
+		if err := navigator.Close(); err != nil {
+			c.logger.Error("failed close", "error", err.Error())
+		}
+	}()
 
 	crawlResult := &crawl.Result{
 		RanAt: time.Now(),

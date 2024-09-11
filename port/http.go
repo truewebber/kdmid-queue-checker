@@ -10,8 +10,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/truewebber/gopkg/log"
+
 	"kdmid-queue-checker/app"
-	"kdmid-queue-checker/domain/log"
 )
 
 type HTTPServer struct {

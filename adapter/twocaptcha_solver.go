@@ -44,7 +44,7 @@ func (t *twoCaptchaSolver) Solve(imageBytes image.PNG) (string, error) {
 		MinLen:   t.minLen,
 	}
 
-	code, err := t.client.Solve(normal.ToRequest())
+	code, _, err := t.client.Solve(normal.ToRequest())
 	if err != nil {
 		return "", fmt.Errorf("could not solve captcha: %w", err)
 	}

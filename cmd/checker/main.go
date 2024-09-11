@@ -4,21 +4,22 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"os"
-	"os/signal"
 	"syscall"
 
+	"github.com/truewebber/gopkg/log"
+	"github.com/truewebber/gopkg/metrics"
+	"github.com/truewebber/gopkg/signal"
 	"golang.org/x/sync/errgroup"
 
-	"kdmid-queue-checker/domain/log"
 	"kdmid-queue-checker/port"
 	"kdmid-queue-checker/service"
 )
 
 func main() {
 	cfg := mustLoadConfig()
-	logger := log.NewZapWrapper()
-	ctx := contextClosableOnSignals(syscall.SIGINT, syscall.SIGTERM)
+	logger := log.NewLogger()
+
+	ctx := signal.ContextClosableOnSignals(syscall.SIGINT, syscall.SIGTERM)
 
 	if err := run(ctx, cfg, logger); err != nil {
 		panic(err)
@@ -40,8 +41,17 @@ func run(ctx context.Context, cfg *config, logger log.Logger) error {
 	logger.Info("Application configured")
 
 	httpServer := port.NewHTTP(cfg.AppHostPort, app, logger)
+	metricsServer := metrics.NewMetricsServer(cfg.MetricsHostPort)
 
 	group, groupCtx := errgroup.WithContext(ctx)
+
+	group.Go(func() error {
+		if err := metricsServer.ListenAndServe(); err != nil {
+			return fmt.Errorf("run metrics server: %w", err)
+		}
+
+		return nil
+	})
 
 	group.Go(func() error {
 		if err := app.Daemon.CheckSlot.Handle(groupCtx); err != nil {
@@ -90,19 +100,4 @@ func buildAppConfig(cfg *config) (*service.Config, error) {
 		},
 		ProxyURL: proxyURL,
 	}, nil
-}
-
-func contextClosableOnSignals(sig ...os.Signal) context.Context {
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, sig...)
-
-	ctx, cancel := context.WithCancel(context.Background())
-
-	go func(signals <-chan os.Signal) {
-		<-signals
-
-		cancel()
-	}(signals)
-
-	return ctx
 }
