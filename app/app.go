@@ -1,8 +1,8 @@
 package app
 
 import (
-	"kdmid-queue-checker/app/daemon"
-	"kdmid-queue-checker/app/query"
+	"github.com/truewebber/kdmid-queue-checker/app/daemon"
+	"github.com/truewebber/kdmid-queue-checker/app/query"
 )
 
 type Application struct {

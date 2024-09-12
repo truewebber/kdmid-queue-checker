@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	crawldomain "kdmid-queue-checker/domain/crawl"
-	"kdmid-queue-checker/domain/image"
+	crawldomain "github.com/truewebber/kdmid-queue-checker/domain/crawl"
+	"github.com/truewebber/kdmid-queue-checker/domain/image"
 )
 
 type ListCrawlsHandler struct {

@@ -6,8 +6,8 @@ import (
 
 	api2captcha "github.com/2captcha/2captcha-go"
 
-	"kdmid-queue-checker/domain/captcha"
-	"kdmid-queue-checker/domain/image"
+	"github.com/truewebber/kdmid-queue-checker/domain/captcha"
+	"github.com/truewebber/kdmid-queue-checker/domain/image"
 )
 
 type twoCaptchaSolver struct {

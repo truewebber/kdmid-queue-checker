@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sort"
 
-	"kdmid-queue-checker/domain/crawl"
-	"kdmid-queue-checker/domain/notification"
+	"github.com/truewebber/kdmid-queue-checker/domain/crawl"
+	"github.com/truewebber/kdmid-queue-checker/domain/notification"
 )
 
 type ListUsersHandler struct {

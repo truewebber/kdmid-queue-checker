@@ -7,7 +7,7 @@ import (
 
 	"github.com/playwright-community/playwright-go"
 
-	"kdmid-queue-checker/domain/page"
+	"github.com/truewebber/kdmid-queue-checker/domain/page"
 )
 
 type BrowserDispatcher interface {

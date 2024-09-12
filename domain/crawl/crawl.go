@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"kdmid-queue-checker/domain/page"
+	"github.com/truewebber/kdmid-queue-checker/domain/page"
 )
 
 type Result struct {

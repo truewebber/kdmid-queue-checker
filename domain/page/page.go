@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"kdmid-queue-checker/domain/image"
+	"github.com/truewebber/kdmid-queue-checker/domain/image"
 )
 
 var ErrCaptchaNotSolved = fmt.Errorf("captcha not solved")

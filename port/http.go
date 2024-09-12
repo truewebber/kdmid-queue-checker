@@ -12,7 +12,7 @@ import (
 
 	"github.com/truewebber/gopkg/log"
 
-	"kdmid-queue-checker/app"
+	"github.com/truewebber/kdmid-queue-checker/app"
 )
 
 type HTTPServer struct {

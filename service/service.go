@@ -5,10 +5,10 @@ import (
 
 	"github.com/truewebber/gopkg/log"
 
-	"kdmid-queue-checker/adapter"
-	"kdmid-queue-checker/app"
-	"kdmid-queue-checker/app/daemon"
-	"kdmid-queue-checker/app/query"
+	"github.com/truewebber/kdmid-queue-checker/adapter"
+	"github.com/truewebber/kdmid-queue-checker/app"
+	"github.com/truewebber/kdmid-queue-checker/app/daemon"
+	"github.com/truewebber/kdmid-queue-checker/app/query"
 )
 
 func NewApplication(cfg *Config, logger log.Logger) *app.Application {

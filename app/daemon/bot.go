@@ -11,7 +11,7 @@ import (
 	"github.com/go-telegram/bot/models"
 	"github.com/truewebber/gopkg/log"
 
-	"kdmid-queue-checker/domain/notification"
+	"github.com/truewebber/kdmid-queue-checker/domain/notification"
 )
 
 type NotifierBot struct {

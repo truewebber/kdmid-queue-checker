@@ -11,10 +11,10 @@ import (
 	"github.com/robfig/cron/v3"
 	"github.com/truewebber/gopkg/log"
 
-	"kdmid-queue-checker/domain/captcha"
-	"kdmid-queue-checker/domain/crawl"
-	"kdmid-queue-checker/domain/notification"
-	"kdmid-queue-checker/domain/page"
+	"github.com/truewebber/kdmid-queue-checker/domain/captcha"
+	"github.com/truewebber/kdmid-queue-checker/domain/crawl"
+	"github.com/truewebber/kdmid-queue-checker/domain/notification"
+	"github.com/truewebber/kdmid-queue-checker/domain/page"
 )
 
 type CheckSlot struct {

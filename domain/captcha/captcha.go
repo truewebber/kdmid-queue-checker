@@ -1,6 +1,6 @@
 package captcha
 
-import "kdmid-queue-checker/domain/image"
+import "github.com/truewebber/kdmid-queue-checker/domain/image"
 
 type Solver interface {
 	Solve(png image.PNG) (string, error)

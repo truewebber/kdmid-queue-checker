@@ -12,8 +12,8 @@ import (
 
 	"github.com/truewebber/gopkg/log"
 
-	"kdmid-queue-checker/domain/crawl"
-	"kdmid-queue-checker/domain/page"
+	"github.com/truewebber/kdmid-queue-checker/domain/crawl"
+	"github.com/truewebber/kdmid-queue-checker/domain/page"
 )
 
 type fileSystemCrawlStorage struct {

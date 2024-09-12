@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"strings"
 
-	"kdmid-queue-checker/domain/image"
-	"kdmid-queue-checker/domain/page"
+	"github.com/truewebber/kdmid-queue-checker/domain/image"
+	"github.com/truewebber/kdmid-queue-checker/domain/page"
 )
 
 type browserNavigator struct {

@@ -1,7 +1,7 @@
 package query
 
 import (
-	"kdmid-queue-checker/domain/notification"
+	"github.com/truewebber/kdmid-queue-checker/domain/notification"
 	"reflect"
 	"testing"
 )

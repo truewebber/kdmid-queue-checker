@@ -11,8 +11,8 @@ import (
 	"github.com/truewebber/gopkg/signal"
 	"golang.org/x/sync/errgroup"
 
-	"kdmid-queue-checker/port"
-	"kdmid-queue-checker/service"
+	"github.com/truewebber/kdmid-queue-checker/port"
+	"github.com/truewebber/kdmid-queue-checker/service"
 )
 
 func main() {

@@ -1,4 +1,4 @@
-module kdmid-queue-checker
+module github.com/truewebber/kdmid-queue-checker
 
 go 1.23.0
 

@@ -11,7 +11,7 @@ import (
 
 	"github.com/truewebber/gopkg/log"
 
-	"kdmid-queue-checker/domain/notification"
+	"github.com/truewebber/kdmid-queue-checker/domain/notification"
 )
 
 type recipientStorageFs struct {
