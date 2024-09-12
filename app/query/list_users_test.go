@@ -1,9 +1,10 @@
 package query
 
 import (
-	"github.com/truewebber/kdmid-queue-checker/domain/notification"
 	"reflect"
 	"testing"
+
+	"github.com/truewebber/kdmid-queue-checker/domain/notification"
 )
 
 func TestListUsers_mergeAndCastUsers(t *testing.T) {
