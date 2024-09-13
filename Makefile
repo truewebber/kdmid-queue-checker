@@ -8,10 +8,8 @@ APP_VERSION := $(shell git rev-parse HEAD)
 # app vars
 include .env
 
-# Default target
 all: upgrade clean
 
-# Target to upgrade or install the helm release
 upgrade:
 	@CHART_NAME=$$(helm show chart $(HELM_CHART_PATH) | grep 'name:' | awk -F ': ' '{print $$2}') && \
 	echo "$$CHART_NAME, Version: $(PACKAGE_VERSION), AppVersion: $(APP_VERSION)" && \
@@ -27,13 +25,5 @@ upgrade:
 	--set-string app.proxy_url=$(PROXY_URL) \
 	--namespace apps --wait;
 
-# Optional clean target
 clean:
 	@rm $(PACKAGE_DESTINATION)/*-$(PACKAGE_VERSION).tgz
-
-# Help target
-help:
-	@echo "Available targets:"
-	@echo "  make upgrade   - Upgrade or install helm release"
-	@echo "  make clean     - Clean up resources"
-	@echo "  make help      - Display this help message"
