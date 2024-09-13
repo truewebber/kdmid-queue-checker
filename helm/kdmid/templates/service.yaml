@@ -4,8 +4,9 @@ metadata:
   name: {{ .Release.Name }}
   namespace: {{ .Release.Namespace }}
   labels:
-    repo: "github_com__truewebber__kdmid_queue_checker"
     app: "kdmid_queue_checker"
+  annotations:
+    repo: "https://github_com/truewebber/kdmid_queue_checker"
 spec:
   type: ClusterIP
   ports:
@@ -18,5 +19,4 @@ spec:
       protocol: TCP
       name: metrics
   selector:
-    repo: "github_com__truewebber__kdmid_queue_checker"
     app: "kdmid_queue_checker"

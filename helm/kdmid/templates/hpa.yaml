@@ -4,8 +4,9 @@ metadata:
   name: {{ .Release.Name }}
   namespace: {{ .Release.Namespace }}
   labels:
-    repo: "github_com__truewebber__kdmid_queue_checker"
     app: "kdmid_queue_checker"
+  annotations:
+    repo: "https://github_com/truewebber/kdmid_queue_checker"
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
