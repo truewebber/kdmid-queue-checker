@@ -7,12 +7,13 @@ metadata:
     app: "kdmid_queue_checker"
   annotations:
     repo: "https://github.com/truewebber/kdmid_queue_checker"
+    cert-manager.io/cluster-issuer: letsencrypt
 spec:
-  ingressClassName: nginx
-#  tls:
-#    - hosts:
-#        - "kdmidbot.trw.red"
-#      secretName: "secret"
+  ingressClassName: nginx-private
+  tls:
+    - hosts:
+        - "*.trw.red"
+      secretName: "trw-red-tls"
   rules:
     - host: {{ .Values.host }}
       http:
